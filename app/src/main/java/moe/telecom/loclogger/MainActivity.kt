@@ -144,11 +144,12 @@ private fun MainContent() {
                             }
                         )
                 ) { page ->
-                when (page) {
-                    0 -> DashboardScreen()
-                    1 -> TrackScreen()
-                    2 -> TracksScreen()
-                    3 -> SettingsScreen()
+                    when (page) {
+                        0 -> DashboardScreen()
+                        1 -> TrackScreen()
+                        2 -> TracksScreen()
+                        3 -> SettingsScreen()
+                    }
                 }
             }
         }
