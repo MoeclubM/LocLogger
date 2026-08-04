@@ -11,6 +11,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -43,16 +46,12 @@ fun GpsMapView(
 ) {
     val context = LocalContext.current
 
-    // 初始化 osmdroid 配置
-    DisposableEffect(Unit) {
+    val mapView = remember {
+        // 初始化 osmdroid 配置（须在创建 MapView 前设置）
         Configuration.getInstance().apply {
             userAgentValue = context.packageName
             tileFileSystemCacheMaxBytes = 500L * 1024 * 1024 // 500MB 缓存
         }
-        onDispose { }
-    }
-
-    val mapView = remember {
         MapView(context).apply {
             setTileSource(MapSources.OSM)
             setMultiTouchControls(true)
@@ -168,8 +167,22 @@ fun GpsMapView(
         mapView.invalidate()
     }
 
-    DisposableEffect(Unit) {
+    // 绑定生命周期：osmdroid 必须调用 onResume/onPause 才会加载地图瓦片
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                else -> {}
+            }
+        }
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            mapView.onResume()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             locationOverlay.disableMyLocation()
             mapView.onDetach()
         }

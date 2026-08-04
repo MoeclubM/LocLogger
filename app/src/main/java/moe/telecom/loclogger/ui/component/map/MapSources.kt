@@ -30,41 +30,62 @@ object MapSources {
     )
 
     // Google 地图
-    val GOOGLE_MAP = XYTileSource(
+    val GOOGLE_MAP = object : OnlineTileSourceBase(
         "Google地图",
         0, 20, 256, ".png",
         arrayOf(
-            "https://mt0.google.com/vt/lyrs=m&hl=zh-CN&x=%d&y=%d&z=%d",
-            "https://mt1.google.com/vt/lyrs=m&hl=zh-CN&x=%d&y=%d&z=%d",
-            "https://mt2.google.com/vt/lyrs=m&hl=zh-CN&x=%d&y=%d&z=%d",
-            "https://mt3.google.com/vt/lyrs=m&hl=zh-CN&x=%d&y=%d&z=%d"
+            "https://mt0.google.com/vt/lyrs=m&hl=zh-CN",
+            "https://mt1.google.com/vt/lyrs=m&hl=zh-CN",
+            "https://mt2.google.com/vt/lyrs=m&hl=zh-CN",
+            "https://mt3.google.com/vt/lyrs=m&hl=zh-CN"
         ),
         "© Google"
-    )
+    ) {
+        override fun getTileURLString(pMapTileIndex: Long): String {
+            return getBaseUrl() +
+                "&x=" + MapTileIndex.getX(pMapTileIndex) +
+                "&y=" + MapTileIndex.getY(pMapTileIndex) +
+                "&z=" + MapTileIndex.getZoom(pMapTileIndex)
+        }
+    }
 
     // Google 卫星
-    val GOOGLE_SATELLITE = XYTileSource(
+    val GOOGLE_SATELLITE = object : OnlineTileSourceBase(
         "Google卫星",
         0, 20, 256, ".jpg",
         arrayOf(
-            "https://mt0.google.com/vt/lyrs=s&hl=zh-CN&x=%d&y=%d&z=%d",
-            "https://mt1.google.com/vt/lyrs=s&hl=zh-CN&x=%d&y=%d&z=%d",
-            "https://mt2.google.com/vt/lyrs=s&hl=zh-CN&x=%d&y=%d&z=%d",
-            "https://mt3.google.com/vt/lyrs=s&hl=zh-CN&x=%d&y=%d&z=%d"
+            "https://mt0.google.com/vt/lyrs=s&hl=zh-CN",
+            "https://mt1.google.com/vt/lyrs=s&hl=zh-CN",
+            "https://mt2.google.com/vt/lyrs=s&hl=zh-CN",
+            "https://mt3.google.com/vt/lyrs=s&hl=zh-CN"
         ),
         "© Google"
-    )
+    ) {
+        override fun getTileURLString(pMapTileIndex: Long): String {
+            return getBaseUrl() +
+                "&x=" + MapTileIndex.getX(pMapTileIndex) +
+                "&y=" + MapTileIndex.getY(pMapTileIndex) +
+                "&z=" + MapTileIndex.getZoom(pMapTileIndex)
+        }
+    }
 
     // Google 地形
-    val GOOGLE_TERRAIN = XYTileSource(
+    val GOOGLE_TERRAIN = object : OnlineTileSourceBase(
         "Google地形",
         0, 18, 256, ".png",
         arrayOf(
-            "https://mt0.google.com/vt/lyrs=p&hl=zh-CN&x=%d&y=%d&z=%d",
-            "https://mt1.google.com/vt/lyrs=p&hl=zh-CN&x=%d&y=%d&z=%d"
+            "https://mt0.google.com/vt/lyrs=p&hl=zh-CN",
+            "https://mt1.google.com/vt/lyrs=p&hl=zh-CN"
         ),
         "© Google"
-    )
+    ) {
+        override fun getTileURLString(pMapTileIndex: Long): String {
+            return getBaseUrl() +
+                "&x=" + MapTileIndex.getX(pMapTileIndex) +
+                "&y=" + MapTileIndex.getY(pMapTileIndex) +
+                "&z=" + MapTileIndex.getZoom(pMapTileIndex)
+        }
+    }
 
     // 高德地图
     val AMAP = object : OnlineTileSourceBase(

@@ -91,4 +91,30 @@ class SettingsRepository @Inject constructor(
     suspend fun updateFloatingBottomBarBlur(enabled: Boolean) {
         context.dataStore.edit { it[Keys.FLOATING_BAR_BLUR] = enabled }
     }
+
+    suspend fun updateKeepScreenOn(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.KEEP_SCREEN_ON] = enabled }
+    }
+
+    suspend fun updateGpsInterval(interval: Int) {
+        context.dataStore.edit { it[Keys.GPS_INTERVAL] = interval }
+    }
+
+    suspend fun updateImproveAccuracy(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.IMPROVE_ACCURACY] = enabled }
+    }
+
+    suspend fun updateEgm96(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.EGM96] = enabled }
+    }
+
+    suspend fun updateGpxVersion(version: String) {
+        context.dataStore.edit {
+            it[Keys.GPX_VERSION] = when (version) {
+                "1.0" -> 0
+                "2.2" -> 2
+                else -> 1
+            }
+        }
+    }
 }

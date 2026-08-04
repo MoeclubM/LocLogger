@@ -47,11 +47,12 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleDebug --build-cache --stacktrace
+          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/LocLogger-debug.apk
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: loclogger-beta-android-${{ github.run_id }}
+          name: LocLogger-debug-${{ github.run_id }}
           archive: false
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/LocLogger-debug.apk
           if-no-files-found: error

@@ -75,23 +75,23 @@ jobs:
           bundle="$(find app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' -print -quit)"
           test -n "$apk"
           test -n "$bundle"
-          mv "$apk" "app/build/outputs/apk/release/loclogger-release-${GITHUB_RUN_ID}.apk"
-          mv "$bundle" "app/build/outputs/bundle/release/loclogger-release-${GITHUB_RUN_ID}.aab"
+          mv "$apk" "app/build/outputs/apk/release/LocLogger-${GITHUB_REF_NAME}.apk"
+          mv "$bundle" "app/build/outputs/bundle/release/LocLogger-${GITHUB_REF_NAME}.aab"
 
       - name: Upload release APK
         uses: actions/upload-artifact@v7
         with:
-          name: loclogger-release-android-${{ github.ref_name }}-${{ github.run_id }}
+          name: LocLogger-release-${{ github.ref_name }}
           archive: false
-          path: app/build/outputs/apk/release/loclogger-release-${{ github.run_id }}.apk
+          path: app/build/outputs/apk/release/LocLogger-${{ github.ref_name }}.apk
           if-no-files-found: error
 
       - name: Upload release AAB
         uses: actions/upload-artifact@v7
         with:
-          name: loclogger-release-android-aab-${{ github.ref_name }}-${{ github.run_id }}
+          name: LocLogger-release-aab-${{ github.ref_name }}
           archive: false
-          path: app/build/outputs/bundle/release/loclogger-release-${{ github.run_id }}.aab
+          path: app/build/outputs/bundle/release/LocLogger-${{ github.ref_name }}.aab
           if-no-files-found: error
 
       - name: Publish to GitHub release
@@ -99,6 +99,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            app/build/outputs/apk/release/loclogger-release-${{ github.run_id }}.apk
-            app/build/outputs/bundle/release/loclogger-release-${{ github.run_id }}.aab
+            app/build/outputs/apk/release/LocLogger-${{ github.ref_name }}.apk
+            app/build/outputs/bundle/release/LocLogger-${{ github.ref_name }}.aab
           generate_release_notes: true

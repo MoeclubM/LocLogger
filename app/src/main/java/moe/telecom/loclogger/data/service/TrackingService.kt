@@ -26,6 +26,7 @@ import moe.telecom.loclogger.data.local.TrackPointDao
 import moe.telecom.loclogger.data.local.entity.AnnotationEntity
 import moe.telecom.loclogger.data.local.entity.TrackEntity
 import moe.telecom.loclogger.data.local.entity.TrackPointEntity
+import moe.telecom.loclogger.data.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -74,6 +76,7 @@ class TrackingService : Service() {
     @Inject lateinit var trackDao: TrackDao
     @Inject lateinit var trackPointDao: TrackPointDao
     @Inject lateinit var annotationDao: AnnotationDao
+    @Inject lateinit var settingsRepository: SettingsRepository
 
     private val binder = LocalBinder()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -166,7 +169,8 @@ class TrackingService : Service() {
             )
 
             acquireWakeLock()
-            startLocationUpdates()
+            val settings = settingsRepository.settings.first()
+            startLocationUpdates(intervalMs = settings.gpsInterval.toLong())
             startForeground(NOTIFICATION_ID, buildNotification("正在记录轨迹…"))
             startDurationUpdates()
         }
@@ -329,12 +333,12 @@ class TrackingService : Service() {
         lastLocation = location
     }
 
-    private fun startLocationUpdates() {
+    private fun startLocationUpdates(intervalMs: Long = MIN_TIME_MS) {
         try {
-            // 优先使用 GPS_PROVIDER
+            // 优先使用 GPS_PROVIDER，更新周期跟随设置
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
-                MIN_TIME_MS,
+                intervalMs,
                 MIN_DISTANCE_M,
                 locationListener,
                 Looper.getMainLooper()

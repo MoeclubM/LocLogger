@@ -1,6 +1,7 @@
 package moe.telecom.loclogger
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -45,6 +46,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: MainViewModel = hiltViewModel()
             val settings by viewModel.settingsState.collectAsState()
+
+            // 保持屏幕常亮
+            LaunchedEffect(settings.keepScreenOn) {
+                if (settings.keepScreenOn) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+
             GpsLoggerTheme(
                 themeColor = keyColorOptions[settings.themeColorIndex],
                 uiMode = UiMode.fromInt(settings.uiMode),

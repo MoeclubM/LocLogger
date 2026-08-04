@@ -35,9 +35,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateKeepScreenOn(enabled: Boolean) {
-        viewModelScope.launch {
-            // TODO: 保存到 DataStore
-        }
+        viewModelScope.launch { settingsRepository.updateKeepScreenOn(enabled) }
     }
 
     fun updateFloatingBottomBar(enabled: Boolean) {
@@ -49,26 +47,18 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateGpsInterval(interval: Int) {
-        viewModelScope.launch {
-            // TODO: 保存到 DataStore
-        }
+        viewModelScope.launch { settingsRepository.updateGpsInterval(interval) }
     }
 
     fun updateImproveAccuracy(enabled: Boolean) {
-        viewModelScope.launch {
-            // TODO: 保存到 DataStore
-        }
+        viewModelScope.launch { settingsRepository.updateImproveAccuracy(enabled) }
     }
 
     fun updateEgm96(enabled: Boolean) {
-        viewModelScope.launch {
-            // TODO: 保存到 DataStore
-        }
+        viewModelScope.launch { settingsRepository.updateEgm96(enabled) }
     }
 
     fun updateGpxVersion(version: String) {
-        viewModelScope.launch {
-            // TODO: 保存到 DataStore
-        }
+        viewModelScope.launch { settingsRepository.updateGpxVersion(version) }
     }
 }

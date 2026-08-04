@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -37,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -334,16 +337,42 @@ private fun ColorPickerItem(
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f)
         )
-        // 颜色圆点
-        Card(
-            shape = RoundedCornerShape(50),
-            colors = CardDefaults.cardColors(
-                containerColor = androidx.compose.ui.graphics.Color(keyColorOptions[selectedIndex])
-            ),
-            modifier = Modifier
-                .padding(8.dp)
-                .size(24.dp)
-        ) {}
+        Box {
+            // 颜色圆点（点击弹出主题色选择）
+            Card(
+                shape = RoundedCornerShape(50),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(keyColorOptions[selectedIndex])
+                ),
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(24.dp)
+                    .clickable { expanded = true }
+            ) {}
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                keyColorOptions.forEachIndexed { index, color ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .background(Color(color), RoundedCornerShape(50))
+                                )
+                                Text("主题色 ${index + 1}")
+                            }
+                        },
+                        onClick = {
+                            onSelected(index)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 
