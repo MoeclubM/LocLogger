@@ -30,9 +30,9 @@ object MapSources {
     val OSM = MapSourceDef(
         name = "OpenStreetMap",
         tileUrls = listOf(
-            "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+            "https://b.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+            "https://c.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
         ),
         maxZoom = 19,
         attribution = "© OpenStreetMap contributors"
@@ -100,10 +100,10 @@ object MapSources {
     val AMAP_SATELLITE = MapSourceDef(
         name = "高德卫星",
         tileUrls = listOf(
-            "https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-            "https://webst02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-            "https://webst03.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-            "https://webst04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}"
+            "https://wprd01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+            "https://wprd02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+            "https://wprd03.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+            "https://wprd04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}"
         ),
         maxZoom = 18,
         attribution = "© 高德地图"
