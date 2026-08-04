@@ -134,6 +134,7 @@ private fun MainContent() {
             ) {
                 HorizontalPager(
                     state = pagerState,
+                    userScrollEnabled = pagerState.currentPage != 0,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(
