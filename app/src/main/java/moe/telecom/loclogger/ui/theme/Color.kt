@@ -1,6 +1,7 @@
 package moe.telecom.loclogger.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 
 // 主题色选项 - 对标 SukiSU Colors.kt
 val keyColorOptions = listOf(

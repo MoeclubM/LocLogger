@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import moe.telecom.loclogger.ui.LocalUiMode
-import moe.telecom.loclogger.ui.UiMode
+import moe.telecom.loclogger.ui.theme.LocalUiMode
+import moe.telecom.loclogger.ui.theme.UiMode
 import kotlin.math.abs
 
 // 对标 SukiSU MainPagerState

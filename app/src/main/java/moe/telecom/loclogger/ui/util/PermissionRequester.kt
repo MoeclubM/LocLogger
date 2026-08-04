@@ -79,6 +79,52 @@ fun PermissionRequester(
     var showSettingsDialog by remember { mutableStateOf<String?>(null) }
     var pendingRequest by remember { mutableStateOf(false) }
 
+    fun checkFinalResult() {
+        if (permissionManager.hasRequiredPermissions()) {
+            onPermissionResult(true)
+        } else {
+            onPermissionResult(false)
+        }
+    }
+
+    // 通知权限请求
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        // 通知权限不阻塞主流程，检查最终结果
+        checkFinalResult()
+    }
+
+    // 从设置页返回
+    val settingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        // 从设置返回后重新检查
+        checkFinalResult()
+    }
+
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!permissionManager.hasNotificationPermission()) {
+                notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+        }
+        checkFinalResult()
+    }
+
+    // 后台定位权限请求
+    val backgroundLocationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            requestNotificationPermission()
+        } else {
+            // 后台定位被拒，提示但不阻塞（前台定位已授权也能用）
+            requestNotificationPermission()
+        }
+    }
+
     // 前台定位权限请求
     val fineLocationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -100,52 +146,6 @@ fun PermissionRequester(
             }
             onPermissionResult(false)
         }
-    }
-
-    // 后台定位权限请求
-    val backgroundLocationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            requestNotificationPermission()
-        } else {
-            // 后台定位被拒，提示但不阻塞（前台定位已授权也能用）
-            requestNotificationPermission()
-        }
-    }
-
-    // 通知权限请求
-    val notificationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {
-        // 通知权限不阻塞主流程，检查最终结果
-        checkFinalResult()
-    }
-
-    // 从设置页返回
-    val settingsLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        // 从设置返回后重新检查
-        checkFinalResult()
-    }
-
-    fun checkFinalResult() {
-        if (permissionManager.hasRequiredPermissions()) {
-            onPermissionResult(true)
-        } else {
-            onPermissionResult(false)
-        }
-    }
-
-    fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (!permissionManager.hasNotificationPermission()) {
-                notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                return
-            }
-        }
-        checkFinalResult()
     }
 
     fun startPermissionFlow() {

@@ -1,6 +1,6 @@
 package moe.telecom.loclogger.ui.component.map
 
-import org.osmdroid.tileprovider.tilesource.OnlineTileSource
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.MapTileIndex
 
@@ -67,7 +67,7 @@ object MapSources {
     )
 
     // 高德地图
-    val AMAP = object : OnlineTileSource(
+    val AMAP = object : OnlineTileSourceBase(
         "高德地图",
         0, 18, 256, ".png",
         arrayOf(
@@ -79,7 +79,7 @@ object MapSources {
         "© 高德地图"
     ) {
         override fun getTileURLString(pMapTileIndex: Long): String {
-            return baseUrl +
+            return getBaseUrl() +
                 "&x=" + MapTileIndex.getX(pMapTileIndex) +
                 "&y=" + MapTileIndex.getY(pMapTileIndex) +
                 "&z=" + MapTileIndex.getZoom(pMapTileIndex)
@@ -87,7 +87,7 @@ object MapSources {
     }
 
     // 高德卫星
-    val AMAP_SATELLITE = object : OnlineTileSource(
+    val AMAP_SATELLITE = object : OnlineTileSourceBase(
         "高德卫星",
         0, 18, 256, ".jpg",
         arrayOf(
@@ -99,7 +99,7 @@ object MapSources {
         "© 高德地图"
     ) {
         override fun getTileURLString(pMapTileIndex: Long): String {
-            return baseUrl +
+            return getBaseUrl() +
                 "&x=" + MapTileIndex.getX(pMapTileIndex) +
                 "&y=" + MapTileIndex.getY(pMapTileIndex) +
                 "&z=" + MapTileIndex.getZoom(pMapTileIndex)

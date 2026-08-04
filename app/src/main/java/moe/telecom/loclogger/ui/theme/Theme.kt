@@ -8,8 +8,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.materialkolor.dynamicColorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.MiuixDarkColorScheme
-import top.yukonga.miuix.kmp.theme.MiuixLightColorScheme
+import top.yukonga.miuix.kmp.theme.darkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 // CompositionLocal - 对标 SukiSU
 val LocalUiMode = staticCompositionLocalOf { UiMode.Material }
@@ -53,7 +53,7 @@ fun GpsLoggerTheme(
             }
             UiMode.Miuix -> {
                 MiuixTheme(
-                    colorScheme = if (darkMode) MiuixDarkColorScheme else MiuixLightColorScheme,
+                    colors = if (darkMode) darkColorScheme() else lightColorScheme(),
                     content = {
                         androidx.compose.material3.MaterialTheme(
                             colorScheme = dynamicColorScheme(

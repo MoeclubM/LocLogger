@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.agp.app)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -18,7 +17,7 @@ val hasReleaseSigning = !releaseStoreFile.isNullOrEmpty() &&
 
 android {
     namespace = "moe.telecom.loclogger"
-    compileSdk = 36
+    compileSdk = 37
 
     signingConfigs {
         create("release") {
@@ -32,7 +31,7 @@ android {
     defaultConfig {
         applicationId = "moe.telecom.loclogger"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0.0"
     }
@@ -54,10 +53,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
     }
 
     buildFeatures {
@@ -119,6 +114,7 @@ dependencies {
 
 kotlin {
     compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         freeCompilerArgs.addAll(
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
         )

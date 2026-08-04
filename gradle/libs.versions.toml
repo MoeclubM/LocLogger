@@ -1,24 +1,23 @@
 [versions]
-agp = "8.9.1"
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.28"
-compose-bom = "2024.12.01"
-compose-compiler = "1.5.15"
-miuix = "0.8.8"
-navigation3 = "1.0.0-alpha06"
-navigationevent = "1.0.0-beta01"
-hilt = "2.52"
-hiltNavigationCompose = "1.2.0"
-room = "2.6.1"
-datastore = "1.1.1"
-lifecycle = "2.8.5"
-activityCompose = "1.9.2"
-coroutines = "1.8.1"
-serialization = "1.6.3"
-materialKolor = "4.0.4"
+agp = "9.3.1"
+kotlin = "2.4.10"
+ksp = "2.3.11"
+compose-bom = "2026.06.01"
+miuix = "0.9.3"
+navigation3 = "1.1.5"
+navigationevent = "1.1.2"
+hilt = "2.60.1"
+hiltNavigationCompose = "1.4.0"
+room = "2.8.4"
+datastore = "1.2.1"
+lifecycle = "2.11.0"
+activityCompose = "1.13.0"
+coroutines = "1.11.0"
+serialization = "1.11.0"
+materialKolor = "5.0.0"
 osmdroid = "6.1.20"
-playservicesLocation = "21.3.0"
-androidxCore = "1.13.1"
+playservicesLocation = "21.4.0"
+androidxCore = "1.19.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -47,7 +46,7 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 # DataStore
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 # Miuix KMP - Liquid Glass 效果
-miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuix" }
+miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui-android", version.ref = "miuix" }
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons-android", version.ref = "miuix" }
 # Material Kolor - 动态取色
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
@@ -60,7 +59,6 @@ androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
