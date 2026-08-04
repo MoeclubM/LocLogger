@@ -85,8 +85,7 @@
 
     <!-- 主题 -->
     <string name="theme_material">Material 3</string>
-    <string name="theme_miuix">MIUI X</string>
-    <string name="theme_classic">经典红</string>
+    <string name="theme_miuix">Miuix</string>
 
     <!-- 单位 -->
     <string name="unit_metric">公制</string>

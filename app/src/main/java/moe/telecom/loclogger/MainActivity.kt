@@ -29,6 +29,8 @@ import moe.telecom.loclogger.ui.screen.track.TrackScreen
 import moe.telecom.loclogger.ui.screen.tracks.TracksScreen
 import moe.telecom.loclogger.ui.theme.ColorMode
 import moe.telecom.loclogger.ui.theme.GpsLoggerTheme
+import moe.telecom.loclogger.ui.theme.LocalEnableBlur
+import moe.telecom.loclogger.ui.theme.LocalEnableFloatingBottomBarBlur
 import moe.telecom.loclogger.ui.theme.LocalLayerBackdrop
 import moe.telecom.loclogger.ui.theme.LocalUiMode
 import moe.telecom.loclogger.ui.theme.UiMode
@@ -94,6 +96,8 @@ private fun MainContent() {
         drawRect(backdropBackground)
         drawContent()
     }
+    // 参考 SukiSU：仅启用模糊时捕获页面内容，避免无谓渲染开销
+    val captureBackdrop = isMiuix && (LocalEnableBlur.current || LocalEnableFloatingBottomBarBlur.current)
 
     // 同步页面状态
     LaunchedEffect(pagerState.currentPage, pagerState.currentPageOffsetFraction) {
@@ -112,7 +116,7 @@ private fun MainContent() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
+                    .then(if (captureBackdrop) Modifier.layerBackdrop(backdrop) else Modifier)
             ) { page ->
                 when (page) {
                     0 -> DashboardScreen()

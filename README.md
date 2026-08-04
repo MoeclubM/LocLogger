@@ -8,13 +8,13 @@ LocLogger 是一款开源的 Android GPS 轨迹记录应用，基于 Kotlin 与 
 
 - **实时定位仪表盘**：纬度、经度、高度、速度、精度、方向、卫星数
 - **轨迹记录**：开始 / 暂停 / 继续 / 停止，前台服务持续记录，支持开机自启
-- **多源地图**：基于 osmdroid，支持 OSM / Google / 高德等瓦片源
+- **多源地图**：基于 MapLibre，支持 OSM / Google / 高德等瓦片源
 - **轨迹批注**：记录过程中随时添加文字批注，导出为路点
 - **轨迹管理**：按活动类型分类（步行 / 跑步 / 骑行 / 驾车 / 公交 / 船）
 - **数据导出**：GPX（1.0 / 1.1 / 2.2）、KML、KMZ、TXT、CSV
 - **备份恢复**：本地备份与恢复
 - **丰富设置**：GPS 更新周期、时间 / 距离过滤、EGM96 高度修正、坐标格式（度分秒 / 十进制度）、单位制（公制 / 英制）、方向显示
-- **主题**：Material 3 / MIUI X（Liquid Glass）/ 经典红，支持动态取色（Material Kolor）
+- **主题**：Material 3 / Miuix（Liquid Glass），支持动态取色（Material Kolor）
 - **本地存储**：Room + DataStore，数据不离开设备
 
 ## 技术栈
@@ -25,7 +25,7 @@ LocLogger 是一款开源的 Android GPS 轨迹记录应用，基于 Kotlin 与 
 | UI | Jetpack Compose、Material 3、Miuix KMP |
 | 架构 | MVVM + Hilt 依赖注入 |
 | 数据 | Room、DataStore Preferences |
-| 地图 | osmdroid |
+| 地图 | MapLibre（OSM / Google / 高德等瓦片源） |
 | 定位 | Google Play Services Location |
 | 序列化 | kotlinx.serialization |
 
@@ -46,7 +46,7 @@ LocLogger 是一款开源的 Android GPS 轨迹记录应用，基于 Kotlin 与 
 
 ### 本地开发
 
-1. 安装 JDK 17+ 与 Android SDK（compileSdk 37）。
+1. 安装 JDK 17+ 与 Android SDK（minSdk 33 / compileSdk 37）。
 2. 使用 Android Studio 打开仓库根目录，或命令行执行：
 
    ```bash

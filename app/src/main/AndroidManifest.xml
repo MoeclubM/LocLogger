@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- miuix-blur 要求 minSdk 33，但本项目 minSdk 26；已用 isRuntimeShaderSupported() 运行时降级，
-        低版本设备不调用 blur API，故 overrideLibrary 强制放行 manifest 合并 -->
-    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
-
     <!-- 定位权限 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
