@@ -1,5 +1,7 @@
 package moe.telecom.loclogger.ui.screen.tracks
 
+import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -32,19 +35,24 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.launch
+import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.viewmodel.TracksViewModel
 
 enum class ActivityType(val icon: ImageVector, val label: String) {
@@ -66,8 +74,11 @@ data class TrackItem(
     val avgSpeed: String
 )
 
+private val EXPORT_FORMATS = listOf("GPX", "KML", "KMZ", "CSV", "TXT")
+
 @Composable
 fun TracksScreen(
+    onTrackClick: (TrackItem) -> Unit,
     viewModel: TracksViewModel = hiltViewModel()
 ) {
     val tracks by viewModel.tracks.collectAsState()
@@ -111,7 +122,11 @@ fun TracksScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(tracks) { track ->
-                    TrackCard(track = track)
+                    TrackCard(
+                        track = track,
+                        viewModel = viewModel,
+                        onTrackClick = onTrackClick
+                    )
                 }
             }
         }
@@ -119,15 +134,21 @@ fun TracksScreen(
 }
 
 @Composable
-private fun TrackCard(track: TrackItem) {
+private fun TrackCard(
+    track: TrackItem,
+    viewModel: TracksViewModel,
+    onTrackClick: (TrackItem) -> Unit
+) {
     var showMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showFormatDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onTrackClick(track) }
     ) {
         Row(
             modifier = Modifier
@@ -197,12 +218,18 @@ private fun TrackCard(track: TrackItem) {
                 ) {
                     DropdownMenuItem(
                         text = { Text("导出") },
-                        onClick = { showMenu = false },
+                        onClick = {
+                            showMenu = false
+                            showFormatDialog = true
+                        },
                         leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) }
                     )
                     DropdownMenuItem(
                         text = { Text("删除") },
-                        onClick = { showMenu = false },
+                        onClick = {
+                            showMenu = false
+                            showDeleteDialog = true
+                        },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Delete,
@@ -214,5 +241,61 @@ private fun TrackCard(track: TrackItem) {
                 }
             }
         }
+    }
+
+    // 删除确认对话框
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("删除轨迹") },
+            text = { Text("确定要删除「${track.name}」吗？此操作无法撤销。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    viewModel.deleteTrack(track)
+                }) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // 导出格式选择对话框
+    if (showFormatDialog) {
+        AlertDialog(
+            onDismissRequest = { showFormatDialog = false },
+            title = { Text("选择导出格式") },
+            text = {
+                Column {
+                    EXPORT_FORMATS.forEach { format ->
+                        TextButton(
+                            onClick = {
+                                showFormatDialog = false
+                                scope.launch {
+                                    val intent = viewModel.shareTrack(track, format)
+                                    context.startActivity(
+                                        Intent.createChooser(intent, "分享轨迹")
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(format)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showFormatDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }

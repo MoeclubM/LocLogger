@@ -18,6 +18,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -28,6 +29,8 @@ import moe.telecom.loclogger.ui.screen.dashboard.DashboardScreen
 import moe.telecom.loclogger.ui.screen.settings.SettingsScreen
 import moe.telecom.loclogger.ui.screen.track.TrackScreen
 import moe.telecom.loclogger.ui.screen.tracks.TracksScreen
+import moe.telecom.loclogger.ui.screen.track.TrackDetailScreen
+import moe.telecom.loclogger.ui.screen.tracks.TrackItem
 import moe.telecom.loclogger.ui.theme.ColorMode
 import moe.telecom.loclogger.ui.theme.GpsLoggerTheme
 import moe.telecom.loclogger.ui.theme.LocalEnableBlur
@@ -81,6 +84,13 @@ class MainActivity : ComponentActivity() {
                         MainContent()
                     }
                 }
+
+                selectedTrack?.let { track ->
+                    TrackDetailScreen(
+                        trackItem = track,
+                        onBack = { selectedTrack = null }
+                    )
+                }
             }
         }
     }
@@ -89,6 +99,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainContent() {
     val pagerState = rememberPagerState(pageCount = { 4 })
+    var selectedTrack by remember { mutableStateOf<TrackItem?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val mainPagerState = rememberMainPagerState(pagerState, coroutineScope)
 
@@ -134,23 +145,24 @@ private fun MainContent() {
             ) {
                 HorizontalPager(
                     state = pagerState,
-                    userScrollEnabled = pagerState.currentPage != 0,
+                    userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(
-                            if (isMiuix && enableFloatingBottomBar && enableFloatingBottomBarBlur) {
-                                Modifier.layerBackdrop(backdrop)
-                            } else {
-                                Modifier
-                            }
-                        )
+                        .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
                 ) { page ->
                     when (page) {
                         0 -> DashboardScreen()
                         1 -> TrackScreen()
-                        2 -> TracksScreen()
+                        2 -> TracksScreen(onTrackClick = { selectedTrack = it })
                         3 -> SettingsScreen()
                     }
+                }
+
+                selectedTrack?.let { track ->
+                    TrackDetailScreen(
+                        trackItem = track,
+                        onBack = { selectedTrack = null }
+                    )
                 }
             }
         }

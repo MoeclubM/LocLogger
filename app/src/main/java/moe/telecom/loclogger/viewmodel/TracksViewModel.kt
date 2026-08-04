@@ -1,5 +1,8 @@
 package moe.telecom.loclogger.viewmodel
 
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import moe.telecom.loclogger.data.local.entity.TrackEntity
@@ -7,11 +10,13 @@ import moe.telecom.loclogger.data.repository.TrackingRepository
 import moe.telecom.loclogger.ui.screen.tracks.ActivityType
 import moe.telecom.loclogger.ui.screen.tracks.TrackItem
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -19,6 +24,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TracksViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val trackingRepository: TrackingRepository
 ) : ViewModel() {
 
@@ -38,6 +44,42 @@ class TracksViewModel @Inject constructor(
                 trackingRepository.deleteTrack(it)
             }
         }
+    }
+
+    /** 导出轨迹到临时文件并返回分享 Intent */
+    suspend fun shareTrack(item: TrackItem, format: String): Intent {
+        val fmt = format.lowercase()
+        val track = trackingRepository.getTrackById(item.id)
+            ?: throw IllegalStateException("轨迹不存在")
+        val points = trackingRepository.getPointsForTrackSync(item.id)
+        val annotations = trackingRepository.getAnnotationsForTrackSync(item.id)
+
+        val exportDir = File(context.filesDir, "exports").apply { mkdirs() }
+        val fileName = trackingRepository.getExportFileName(track, fmt)
+        val file = File(exportDir, fileName)
+        file.outputStream().use { out ->
+            trackingRepository.exportTrack(out, track, points, annotations, fmt)
+        }
+
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val mime = trackingRepository.getExportMimeType(fmt)
+        return Intent(Intent.ACTION_SEND).apply {
+            type = mime
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    /** 获取轨迹详情数据 */
+    suspend fun getTrackDetail(item: TrackItem): TrackDetail? {
+        val track = trackingRepository.getTrackById(item.id) ?: return null
+        val points = trackingRepository.getPointsForTrackSync(item.id)
+        val annotations = trackingRepository.getAnnotationsForTrackSync(item.id)
+        return TrackDetail(track, points, annotations)
     }
 
     private fun TrackEntity.toTrackItem(): TrackItem {
@@ -69,3 +111,9 @@ class TracksViewModel @Inject constructor(
         else String.format("%02d:%02d", m, s)
     }
 }
+
+data class TrackDetail(
+    val track: TrackEntity,
+    val points: List<moe.telecom.loclogger.data.local.entity.TrackPointEntity>,
+    val annotations: List<moe.telecom.loclogger.data.local.entity.AnnotationEntity>
+)
