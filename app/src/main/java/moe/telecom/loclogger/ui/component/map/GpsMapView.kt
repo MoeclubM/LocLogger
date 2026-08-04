@@ -255,7 +255,8 @@ private fun moveCamera(state: MapViewState, lat: Double, lon: Double, force: Boo
     val map = state.map ?: return
     val target = LatLng(lat, lon)
     val camera = map.cameraPosition
-    val needsMove = force || camera.zoom < 14.0 || camera.target.distanceTo(target) > 150.0
+    val distToCenter = camera.target?.distanceTo(target) ?: Double.MAX_VALUE
+    val needsMove = force || camera.zoom < 14.0 || distToCenter > 150.0
     if (needsMove) {
         map.animateCamera(
             CameraUpdateFactory.newLatLngZoom(target, camera.zoom.coerceAtLeast(16.0)),
