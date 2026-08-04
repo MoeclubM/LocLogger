@@ -87,7 +87,6 @@ fun BottomBar(
     when (LocalUiMode.current) {
         UiMode.Miuix -> BottomBarMiuix(modifier)
         UiMode.Material -> BottomBarMaterial(modifier)
-        UiMode.Classic -> BottomBarMaterial(modifier)
     }
 }
 
@@ -98,6 +97,5 @@ fun SideRail(
     when (LocalUiMode.current) {
         UiMode.Miuix -> NavigationRailMiuix(modifier)
         UiMode.Material -> NavigationRailMaterial(modifier)
-        UiMode.Classic -> NavigationRailMaterial(modifier)
     }
 }

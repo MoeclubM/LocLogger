@@ -7,6 +7,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.materialkolor.dynamicColorScheme
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -17,6 +18,7 @@ val LocalColorMode = staticCompositionLocalOf { ColorMode.SYSTEM.value }
 val LocalEnableBlur = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBar = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBarBlur = staticCompositionLocalOf { true }
+val LocalLayerBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 @Composable
 fun GpsLoggerTheme(
@@ -64,30 +66,6 @@ fun GpsLoggerTheme(
                             content = content
                         )
                     }
-                )
-            }
-            UiMode.Classic -> {
-                val colorScheme = if (darkMode) {
-                    dynamicColorScheme(
-                        seedColor = ClassicRed,
-                        isDark = true
-                    ).copy(
-                        surface = Color(0xFF1A1A1A),
-                        background = Color(0xFF000000)
-                    )
-                } else {
-                    dynamicColorScheme(
-                        seedColor = ClassicRed,
-                        isDark = false
-                    ).copy(
-                        surface = Color(0xFFF5F5F5),
-                        background = Color(0xFFFFFFFF)
-                    )
-                }
-                androidx.compose.material3.MaterialTheme(
-                    colorScheme = colorScheme,
-                    typography = AppTypography,
-                    content = content
                 )
             }
         }

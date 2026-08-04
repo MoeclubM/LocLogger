@@ -103,7 +103,7 @@ fun SettingsScreen(
                 title = "当前主题",
                 subtitle = UiMode.fromInt(settings.uiMode).displayName,
                 options = UiMode.entries.map { it.displayName },
-                selectedIndex = settings.uiMode,
+                selectedIndex = UiMode.fromInt(settings.uiMode).ordinal,
                 onSelected = { viewModel.updateUiMode(it) }
             )
             SettingsDropdownItem(

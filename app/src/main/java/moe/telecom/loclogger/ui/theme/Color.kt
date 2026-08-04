@@ -21,7 +21,3 @@ val keyColorOptions = listOf(
     Color(0xFF607D8F).toArgb(),  // 蓝灰
     Color(0xFFFF9CA8).toArgb(),  // 浅粉
 )
-
-// 经典红色主题（参考应用风格）
-val ClassicRed = Color(0xFFD32F2F)
-val ClassicRedDark = Color(0xFFB71C1C)

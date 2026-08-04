@@ -116,6 +116,7 @@ dependencies {
     // Miuix KMP - Liquid Glass 效果
     implementation(libs.miuix.ui)
     implementation(libs.miuix.icons)
+    implementation(libs.miuix.blur)
 
     // Material Kolor - 动态取色
     implementation(libs.material.kolor)

@@ -48,6 +48,7 @@ datastore-preferences = { module = "androidx.datastore:datastore-preferences", v
 # Miuix KMP - Liquid Glass 效果
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui-android", version.ref = "miuix" }
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons-android", version.ref = "miuix" }
+miuix-blur = { module = "top.yukonga.miuix.kmp:miuix-blur-android", version.ref = "miuix" }
 # Material Kolor - 动态取色
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 # MapLibre - 多源地图（OSM/Google/高德，raster 瓦片）

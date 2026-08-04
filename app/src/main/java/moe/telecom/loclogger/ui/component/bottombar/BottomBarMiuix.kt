@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Map
@@ -13,16 +14,22 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Timeline
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import moe.telecom.loclogger.R
 import moe.telecom.loclogger.ui.LocalMainPagerState
 import moe.telecom.loclogger.ui.theme.LocalEnableFloatingBottomBar
+import moe.telecom.loclogger.ui.theme.LocalEnableFloatingBottomBarBlur
+import moe.telecom.loclogger.ui.theme.LocalLayerBackdrop
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
+import top.yukonga.miuix.kmp.basic.FloatingToolbarDefaults
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // GPS Logger 底部导航项
@@ -42,6 +49,8 @@ fun BottomBarMiuix(
 ) {
     val mainState = LocalMainPagerState.current
     val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
+    val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
+    val backdrop = LocalLayerBackdrop.current
     val items = BottomBarDestination.entries
 
     if (!enableFloatingBottomBar) {
@@ -61,12 +70,27 @@ fun BottomBarMiuix(
             }
         }
     } else {
-        // Liquid Glass 浮动导航栏模式
+        // Liquid Glass 浮动导航栏：LayerBackdrop 捕获页面内容 + textureBlur 实时毛玻璃
+        val blurEnabled = enableFloatingBottomBarBlur &&
+            backdrop != null &&
+            isRuntimeShaderSupported()
+        val barColor = if (blurEnabled) Color.Transparent else MiuixTheme.colorScheme.surfaceContainer
         FloatingNavigationBar(
-            modifier = modifier.padding(
-                bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            ),
-            color = MiuixTheme.colorScheme.surfaceContainer,
+            modifier = modifier
+                .then(
+                    if (blurEnabled && backdrop != null) {
+                        Modifier.textureBlur(
+                            backdrop = backdrop,
+                            shape = RoundedCornerShape(FloatingToolbarDefaults.CornerRadius)
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .padding(
+                    bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                ),
+            color = barColor,
         ) {
             items.forEachIndexed { index, destination ->
                 FloatingNavigationBarItem(

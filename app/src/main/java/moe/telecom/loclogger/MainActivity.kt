@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -28,10 +29,14 @@ import moe.telecom.loclogger.ui.screen.track.TrackScreen
 import moe.telecom.loclogger.ui.screen.tracks.TracksScreen
 import moe.telecom.loclogger.ui.theme.ColorMode
 import moe.telecom.loclogger.ui.theme.GpsLoggerTheme
+import moe.telecom.loclogger.ui.theme.LocalLayerBackdrop
+import moe.telecom.loclogger.ui.theme.LocalUiMode
 import moe.telecom.loclogger.ui.theme.UiMode
 import moe.telecom.loclogger.ui.theme.keyColorOptions
 import moe.telecom.loclogger.ui.util.PermissionManager
 import moe.telecom.loclogger.ui.util.PermissionRequester
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import moe.telecom.loclogger.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -82,13 +87,22 @@ private fun MainContent() {
     val coroutineScope = rememberCoroutineScope()
     val mainPagerState = rememberMainPagerState(pagerState, coroutineScope)
 
+    // Liquid Glass 底栏：捕获页面内容作为毛玻璃背景（先铺不透明背景避免透明区域扩散）
+    val isMiuix = LocalUiMode.current == UiMode.Miuix
+    val backdropBackground = MaterialTheme.colorScheme.background
+    val backdrop = rememberLayerBackdrop {
+        drawRect(backdropBackground)
+        drawContent()
+    }
+
     // 同步页面状态
     LaunchedEffect(pagerState.currentPage, pagerState.currentPageOffsetFraction) {
         mainPagerState.syncPage()
     }
 
     CompositionLocalProvider(
-        LocalMainPagerState provides mainPagerState
+        LocalMainPagerState provides mainPagerState,
+        LocalLayerBackdrop provides backdrop
     ) {
         Scaffold(
             bottomBar = { BottomBar() }
@@ -98,6 +112,7 @@ private fun MainContent() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
             ) { page ->
                 when (page) {
                     0 -> DashboardScreen()
