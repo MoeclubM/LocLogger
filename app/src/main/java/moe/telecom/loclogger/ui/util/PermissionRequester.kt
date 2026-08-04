@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -43,31 +41,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 
-/**
- * 权限请求状态
- */
-sealed class PermissionState {
-    data object Granted : PermissionState()
-    data class ShowRationale(val permission: String) : PermissionState()
-    data class NeedSettings(val reason: String) : PermissionState()
-    data class Denied(val message: String) : PermissionState()
-}
+/** 设置页引导弹窗内容；blocking=true 时拒绝会阻塞主流程，false 时仅提示不阻塞 */
+private data class SettingsPrompt(val reason: String, val blocking: Boolean)
 
 /**
  * 权限请求 Composable
  *
  * 处理流程：
- * 1. 检查权限 -> 已授权 -> 直接执行 onGranted
- * 2. 未授权 -> 显示说明对话框 -> 用户同意 -> 请求权限
- * 3. 用户授权 -> 自动重试 onGranted（关键：授权后再调用一次）
- * 4. 用户拒绝 -> 显示拒绝提示
- * 5. 用户选"不再询问" -> 引导跳设置页
+ * 1. 已授权 -> 回调 onPermissionResult(true)
+ * 2. 前台定位未授权 -> 同时请求 FINE + COARSE（Android 12+ 官方要求，单独请求 FINE 会被忽略）
+ * 3. 后台定位：
+ *    - Android 11+ 系统弹窗不再提供"始终允许"，引导去系统设置开启（不阻塞主流程）
+ *    - Android 10 及以下直接请求（系统弹窗含"始终允许"）
+ * 4. 通知权限 -> 请求
  */
 @Composable
 fun PermissionRequester(
@@ -79,71 +69,80 @@ fun PermissionRequester(
     val activity = context as? Activity
 
     var showRationaleDialog by remember { mutableStateOf<String?>(null) }
-    var showSettingsDialog by remember { mutableStateOf<String?>(null) }
-    var pendingRequest by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf<SettingsPrompt?>(null) }
 
     fun checkFinalResult() {
-        if (permissionManager.hasRequiredPermissions()) {
-            onPermissionResult(true)
-        } else {
-            onPermissionResult(false)
-        }
+        onPermissionResult(permissionManager.hasRequiredPermissions())
     }
 
-    // 通知权限请求
+    // 通知权限请求（Android 13+）
     val notificationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {
-        // 通知权限不阻塞主流程，检查最终结果
-        checkFinalResult()
-    }
-
-    // 从设置页返回
-    val settingsLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        // 从设置返回后重新检查
         checkFinalResult()
     }
 
     fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (!permissionManager.hasNotificationPermission()) {
-                notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                return
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !permissionManager.hasNotificationPermission()
+        ) {
+            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            checkFinalResult()
         }
-        checkFinalResult()
     }
 
-    // 后台定位权限请求
+    // 后台定位请求（仅 Android 10 及以下使用，系统弹窗含"始终允许"）
     val backgroundLocationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            requestNotificationPermission()
+    ) {
+        requestNotificationPermission()
+    }
+
+    // 后台定位：Android 11+ 只能去系统设置开启，Android 10 及以下直接请求
+    fun requestBackgroundLocation() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            showSettingsDialog = SettingsPrompt(
+                "Android 11 及以上系统不再提供「始终允许」选项。\n\n" +
+                    "请到系统设置中为 GPS Logger 开启「允许所有时间」定位权限，" +
+                    "以便息屏或切换到其他应用后仍能持续记录轨迹。",
+                blocking = false
+            )
+        } else if (activity != null &&
+            activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        ) {
+            showRationaleDialog = Manifest.permission.ACCESS_BACKGROUND_LOCATION
         } else {
-            // 后台定位被拒，提示但不阻塞（前台定位已授权也能用）
+            backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        }
+    }
+
+    // 前台定位授予后的后续流程：后台引导 / 通知
+    fun continueAfterForegroundLocation() {
+        if (!permissionManager.hasBackgroundLocation()) {
+            requestBackgroundLocation()
+        } else {
             requestNotificationPermission()
         }
     }
 
-    // 前台定位权限请求
-    val fineLocationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            // 前台定位授权后，继续请求后台定位
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            } else {
-                // Android 9 及以下没有后台定位权限，直接请求通知
-                requestNotificationPermission()
-            }
+    // 前台定位请求：FINE + COARSE 必须同时请求
+    val locationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        if (permissionManager.hasForegroundLocation()) {
+            // 前台定位已授予，继续后台引导 / 通知
+            continueAfterForegroundLocation()
         } else {
-            if (activity != null && !activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                // 用户选了"不再询问"
-                showSettingsDialog = "定位权限被拒绝且不再询问，请在设置中手动开启"
+            val fineDenied = result[Manifest.permission.ACCESS_FINE_LOCATION] == false
+            if (fineDenied && activity != null &&
+                !activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)
+            ) {
+                // 用户选了"不再询问"，引导去设置
+                showSettingsDialog = SettingsPrompt(
+                    "定位权限被拒绝且不再询问，请在设置中手动开启「精确位置」权限。",
+                    blocking = true
+                )
             } else {
                 showRationaleDialog = Manifest.permission.ACCESS_FINE_LOCATION
             }
@@ -153,29 +152,36 @@ fun PermissionRequester(
 
     fun startPermissionFlow() {
         when {
-            permissionManager.hasRequiredPermissions() -> {
+            // 全部就绪（含后台定位）才算完成；Android 11+ 后台缺失时走 else 不阻塞
+            permissionManager.hasRequiredPermissions() && permissionManager.hasBackgroundLocation() ->
                 onPermissionResult(true)
-            }
-            !permissionManager.hasFineLocation() -> {
-                if (activity != null && activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            !permissionManager.hasForegroundLocation() -> {
+                if (activity != null &&
+                    activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)
+                ) {
                     showRationaleDialog = Manifest.permission.ACCESS_FINE_LOCATION
                 } else {
-                    fineLocationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    locationLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
                 }
             }
-            !permissionManager.hasBackgroundLocation() -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    if (activity != null && activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
-                        showRationaleDialog = Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                    } else {
-                        backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                    }
-                }
-            }
-            else -> {
-                requestNotificationPermission()
-            }
+            // Android 10 及以下后台定位缺失时自动请求（系统弹窗含"始终允许"）；
+            // Android 11+ 不自动打扰，由前台授权回调或设置页引导
+            !permissionManager.hasBackgroundLocation() && Build.VERSION.SDK_INT < Build.VERSION_CODES.R ->
+                requestBackgroundLocation()
+            else -> requestNotificationPermission()
         }
+    }
+
+    // 从设置页返回后继续完整流程（后台定位/通知可能已手动开启）
+    val settingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        startPermissionFlow()
     }
 
     // 权限说明对话框
@@ -201,7 +207,12 @@ fun PermissionRequester(
                     if (isBackground) {
                         backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
                     } else {
-                        fineLocationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        locationLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
                     }
                 }) {
                     Text("授予权限")
@@ -218,15 +229,15 @@ fun PermissionRequester(
         )
     }
 
-    // 引导去设置对话框
-    showSettingsDialog?.let { reason ->
+    // 引导去设置对话框（前台被拒不再询问 / Android 11+ 后台定位）
+    showSettingsDialog?.let { prompt ->
         AlertDialog(
             onDismissRequest = {
                 showSettingsDialog = null
-                onPermissionResult(false)
+                onPermissionResult(!prompt.blocking)
             },
-            title = { Text("需要手动开启权限") },
-            text = { Text(reason) },
+            title = { Text(if (prompt.blocking) "需要手动开启权限" else "建议开启后台定位") },
+            text = { Text(prompt.reason) },
             confirmButton = {
                 Button(onClick = {
                     showSettingsDialog = null
@@ -243,9 +254,9 @@ fun PermissionRequester(
             dismissButton = {
                 TextButton(onClick = {
                     showSettingsDialog = null
-                    onPermissionResult(false)
+                    onPermissionResult(!prompt.blocking)
                 }) {
-                    Text("取消")
+                    Text(if (prompt.blocking) "取消" else "稍后")
                 }
             }
         )
@@ -276,11 +287,12 @@ interface PermissionEntryPoint {
 fun PermissionStatusCard(
     permissionManager: PermissionManager,
     onRequestPermissions: () -> Unit,
+    onOpenBackgroundLocation: () -> Unit,
     onOpenAutoStart: () -> Unit,
     onRequestBattery: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val hasLocation = permissionManager.hasFineLocation()
+    val hasLocation = permissionManager.hasForegroundLocation()
     val hasBackground = permissionManager.hasBackgroundLocation()
     val hasNotification = permissionManager.hasNotificationPermission()
     val hasBattery = permissionManager.isIgnoringBatteryOptimizations()
@@ -312,7 +324,10 @@ fun PermissionStatusCard(
             PermissionItem(
                 icon = Icons.Default.LocationOn,
                 title = "后台定位",
-                subtitle = "息屏时持续记录",
+                subtitle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                    "息屏持续记录（Android 11+ 需到系统设置开启）"
+                else
+                    "息屏时持续记录",
                 granted = hasBackground
             )
 
@@ -350,11 +365,22 @@ fun PermissionStatusCard(
                 }
             }
 
-            OutlinedButton(
-                onClick = onRequestBattery,
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("加入电池优化白名单")
+                OutlinedButton(
+                    onClick = onOpenBackgroundLocation,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("后台定位设置")
+                }
+                OutlinedButton(
+                    onClick = onRequestBattery,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("电池白名单")
+                }
             }
         }
     }

@@ -23,9 +23,10 @@ import javax.inject.Singleton
 class PermissionManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    // 基础权限
+    // 基础权限（前台定位必须同时包含 FINE + COARSE，Android 12+ 要求）
     val requiredPermissions = buildList {
         add(Manifest.permission.ACCESS_FINE_LOCATION)
+        add(Manifest.permission.ACCESS_COARSE_LOCATION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             add(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -54,12 +55,12 @@ class PermissionManager @Inject constructor(
                 PackageManager.PERMISSION_GRANTED
         } else true
 
-    fun hasRequiredPermissions(): Boolean {
-        val base = requiredPermissions.all {
+    fun hasForegroundLocation(): Boolean = hasFineLocation() && hasCoarseLocation()
+
+    fun hasRequiredPermissions(): Boolean =
+        requiredPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
-        return base && hasBackgroundLocation()
-    }
 
     fun isIgnoringBatteryOptimizations(): Boolean {
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager

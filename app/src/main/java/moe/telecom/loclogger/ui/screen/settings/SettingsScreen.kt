@@ -200,19 +200,18 @@ fun SettingsScreen(
             PermissionStatusCard(
                 permissionManager = permissionManager,
                 onRequestPermissions = {
+                    // 前台定位 + 通知：FINE/COARSE 必须同时请求；BACKGROUND 不能混在数组里（Android 11+ 会被忽略）
                     permissionLauncher.launch(
                         buildList {
                             add(Manifest.permission.ACCESS_FINE_LOCATION)
                             add(Manifest.permission.ACCESS_COARSE_LOCATION)
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                            }
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 add(Manifest.permission.POST_NOTIFICATIONS)
                             }
                         }.toTypedArray()
                     )
                 },
+                onOpenBackgroundLocation = { activity?.let { permissionManager.openAppSettings(it) } },
                 onOpenAutoStart = { activity?.let { permissionManager.openAutoStartSettings(it) } },
                 onRequestBattery = { activity?.let { permissionManager.requestIgnoreBatteryOptimizations(it) } }
             )
