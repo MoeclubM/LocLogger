@@ -41,7 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import moe.telecom.loclogger.ui.component.map.GpsMapView
 import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.viewmodel.DashboardViewModel

@@ -15,15 +15,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.automirrored.filled.DirectionsBike
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsBoat
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.DirectionsRun
-import androidx.compose.material.icons.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -44,13 +44,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import moe.telecom.loclogger.viewmodel.TracksViewModel
 
 enum class ActivityType(val icon: ImageVector, val label: String) {
-    WALK(Icons.Default.DirectionsWalk, "步行"),
-    RUN(Icons.Default.DirectionsRun, "跑步"),
-    CYCLE(Icons.Default.DirectionsBike, "骑行"),
+    WALK(Icons.AutoMirrored.Filled.DirectionsWalk, "步行"),
+    RUN(Icons.AutoMirrored.Filled.DirectionsRun, "跑步"),
+    CYCLE(Icons.AutoMirrored.Filled.DirectionsBike, "骑行"),
     DRIVE(Icons.Default.DirectionsCar, "驾车"),
     BUS(Icons.Default.DirectionsBus, "公交"),
     BOAT(Icons.Default.DirectionsBoat, "船")

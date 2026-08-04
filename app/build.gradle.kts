@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.agp.app)
     alias(libs.plugins.kotlin.compose)
@@ -5,15 +7,26 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
-// Release 签名由 GitHub Actions 通过 Secret 注入（LOCLOGGER_RELEASE_*），本地不配置密钥
+// Release 签名：密钥库提交在仓库 keystore/loclogger-release.keystore；
+// 密码本地读 keystore.properties（不入库），CI 由 GH Secrets 通过 ORG_GRADLE_PROJECT_* 注入
+fun signingValue(name: String): String {
+    val propsFile = rootProject.file("keystore.properties")
+    if (propsFile.isFile) {
+        val props = Properties()
+        propsFile.inputStream().use { props.load(it) }
+        props.getProperty(name)?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+    }
+    return providers.gradleProperty(name).orNull?.trim().orEmpty()
+}
+
 val releaseStoreFile = providers.environmentVariable("LOCLOGGER_RELEASE_STORE_FILE").orNull
-val releaseStorePassword = providers.environmentVariable("LOCLOGGER_RELEASE_STORE_PASSWORD").orNull
-val releaseKeyAlias = providers.environmentVariable("LOCLOGGER_RELEASE_KEY_ALIAS").orNull
-val releaseKeyPassword = providers.environmentVariable("LOCLOGGER_RELEASE_KEY_PASSWORD").orNull
-val hasReleaseSigning = !releaseStoreFile.isNullOrEmpty() &&
-    !releaseStorePassword.isNullOrEmpty() &&
-    !releaseKeyAlias.isNullOrEmpty() &&
-    !releaseKeyPassword.isNullOrEmpty()
+    ?: "keystore/loclogger-release.keystore"
+val releaseStorePassword = signingValue("LOCLOGGER_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = signingValue("LOCLOGGER_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = signingValue("LOCLOGGER_RELEASE_KEY_PASSWORD")
+val hasReleaseSigning = releaseStorePassword.isNotEmpty() &&
+    releaseKeyAlias.isNotEmpty() &&
+    releaseKeyPassword.isNotEmpty()
 
 android {
     namespace = "moe.telecom.loclogger"
@@ -21,7 +34,7 @@ android {
 
     signingConfigs {
         create("release") {
-            releaseStoreFile?.let { storeFile = rootProject.file(it) }
+            storeFile = rootProject.file(releaseStoreFile)
             storePassword = releaseStorePassword
             keyAlias = releaseKeyAlias
             keyPassword = releaseKeyPassword

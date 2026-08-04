@@ -17,7 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import moe.telecom.loclogger.ui.LocalMainPagerState
 import moe.telecom.loclogger.ui.component.bottombar.BottomBar
 import moe.telecom.loclogger.ui.component.bottombar.rememberMainPagerState

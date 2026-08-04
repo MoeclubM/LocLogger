@@ -46,7 +46,7 @@ LocLogger 是一款开源的 Android GPS 轨迹记录应用，基于 Kotlin 与 
 
 ### 本地开发
 
-1. 安装 JDK 17+ 与 Android SDK（compileSdk 36）。
+1. 安装 JDK 17+ 与 Android SDK（compileSdk 37）。
 2. 使用 Android Studio 打开仓库根目录，或命令行执行：
 
    ```bash
@@ -55,7 +55,7 @@ LocLogger 是一款开源的 Android GPS 轨迹记录应用，基于 Kotlin 与 
 
 3. Debug APK 输出：`app/build/outputs/apk/debug/app-debug.apk`。
 
-Release 签名密钥不保存在仓库中；本地执行 `assembleRelease` 会生成未签名 APK，正式签名构建请通过 GitHub Actions 完成。
+Release 签名密钥库已提交在仓库 `keystore/loclogger-release.keystore`；密码不写入仓库，本地读取根目录 `keystore.properties`（已被 gitignore），CI 通过 GitHub Secrets 注入。
 
 ### GitHub Actions 自动构建
 
@@ -65,13 +65,14 @@ Release 签名密钥不保存在仓库中；本地执行 `assembleRelease` 会�
 Release 构建所需 Secrets：
 
 ```text
-LOCLOGGER_RELEASE_STORE_BASE64      # Release 签名 keystore 的 Base64 编码
 LOCLOGGER_RELEASE_STORE_PASSWORD    # keystore 密码
-LOCLOGGER_RELEASE_KEY_ALIAS         # 签名 key 别名
+LOCLOGGER_RELEASE_KEY_ALIAS         # 签名 key 别名（默认 loclogger）
 LOCLOGGER_RELEASE_KEY_PASSWORD      # 签名 key 密码
 ```
 
-构建时由 Actions 将 `LOCLOGGER_RELEASE_STORE_BASE64` 解码到临时目录并注入 Gradle 签名配置，仓库内不保存任何签名文件。
+构建时由 Actions 将 Secrets 以 `ORG_GRADLE_PROJECT_*` 注入 Gradle，签名密钥库直接使用仓库内的 `keystore/loclogger-release.keystore`。
+
+本地 Release 签名：在仓库根目录创建 `keystore.properties`（已被 gitignore），键名同上三个 `LOCLOGGER_RELEASE_*`，执行 `./gradlew :app:assembleRelease` 即可生成签名 APK。
 
 ## 开源许可
 

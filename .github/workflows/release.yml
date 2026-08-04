@@ -20,10 +20,9 @@ jobs:
     name: Android release APK/AAB
     runs-on: ubuntu-latest
     env:
-      LOCLOGGER_RELEASE_STORE_BASE64: ${{ secrets.LOCLOGGER_RELEASE_STORE_BASE64 }}
-      LOCLOGGER_RELEASE_STORE_PASSWORD: ${{ secrets.LOCLOGGER_RELEASE_STORE_PASSWORD }}
-      LOCLOGGER_RELEASE_KEY_ALIAS: ${{ secrets.LOCLOGGER_RELEASE_KEY_ALIAS }}
-      LOCLOGGER_RELEASE_KEY_PASSWORD: ${{ secrets.LOCLOGGER_RELEASE_KEY_PASSWORD }}
+      ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_STORE_PASSWORD: ${{ secrets.LOCLOGGER_RELEASE_STORE_PASSWORD }}
+      ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_ALIAS: ${{ secrets.LOCLOGGER_RELEASE_KEY_ALIAS }}
+      ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_PASSWORD: ${{ secrets.LOCLOGGER_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -46,29 +45,25 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: 'platforms;android-36 build-tools;36.1.0'
+          packages: 'platforms;android-37.0 build-tools;36.0.0'
 
-      - name: Prepare release keystore
+      - name: Validate release signing secrets
         shell: bash
         run: |
-          for name in LOCLOGGER_RELEASE_STORE_BASE64 LOCLOGGER_RELEASE_STORE_PASSWORD LOCLOGGER_RELEASE_KEY_ALIAS LOCLOGGER_RELEASE_KEY_PASSWORD; do
+          for name in ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_STORE_PASSWORD ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_ALIAS ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_PASSWORD; do
             if [ -z "${!name}" ]; then
-              echo "::error::$name is empty or not available to this workflow"
+              echo "::error::${name} is empty or not available to this workflow"
               exit 1
             fi
           done
-          LOCLOGGER_RELEASE_STORE_FILE="$RUNNER_TEMP/loclogger-release-signing.jks"
-          echo "LOCLOGGER_RELEASE_STORE_FILE=$LOCLOGGER_RELEASE_STORE_FILE" >> "$GITHUB_ENV"
-          mkdir -p "$(dirname "$LOCLOGGER_RELEASE_STORE_FILE")"
-          printf '%s' "$LOCLOGGER_RELEASE_STORE_BASE64" | base64 -d > "$LOCLOGGER_RELEASE_STORE_FILE"
 
-      - name: Verify release signing certificate
+      - name: Verify release signing keystore
         shell: bash
         run: |
           keytool -list -v \
-            -keystore "$LOCLOGGER_RELEASE_STORE_FILE" \
-            -storepass "$LOCLOGGER_RELEASE_STORE_PASSWORD" \
-            -alias "$LOCLOGGER_RELEASE_KEY_ALIAS" \
+            -keystore keystore/loclogger-release.keystore \
+            -storepass "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_STORE_PASSWORD" \
+            -alias "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_ALIAS" \
             | grep -E 'Alias name:|SHA256:'
 
       - name: Build signed release APK and AAB

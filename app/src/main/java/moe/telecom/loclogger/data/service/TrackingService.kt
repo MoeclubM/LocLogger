@@ -238,8 +238,8 @@ class TrackingService : Service() {
             annotationDao.insertAnnotation(
                 AnnotationEntity(
                     trackId = trackId,
-                    latitude = state.latitude!!,
-                    longitude = state.longitude!!,
+                    latitude = state.latitude,
+                    longitude = state.longitude,
                     description = description,
                     timestamp = System.currentTimeMillis()
                 )
