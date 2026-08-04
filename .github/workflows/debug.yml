@@ -19,6 +19,10 @@ jobs:
   android-beta:
     name: Android debug APK
     runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_STORE_PASSWORD: ${{ secrets.LOCLOGGER_RELEASE_STORE_PASSWORD }}
+      ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_ALIAS: ${{ secrets.LOCLOGGER_RELEASE_KEY_ALIAS }}
+      ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_PASSWORD: ${{ secrets.LOCLOGGER_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
