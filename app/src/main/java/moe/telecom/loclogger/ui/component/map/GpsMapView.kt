@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.gestures.MoveGestureDetector
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
@@ -52,7 +53,9 @@ fun GpsMapView(
     annotations: List<Triple<Double, Double, String>> = emptyList(),
     mapSourceName: String = "高德地图",
     followLocation: Boolean = true,
-    showMyLocation: Boolean = true
+    showMyLocation: Boolean = true,
+    recenterRequest: Int = 0,
+    onUserGesture: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val state = remember { MapViewState() }
@@ -66,9 +69,20 @@ fun GpsMapView(
     DisposableEffect(mapView) {
         mapView.getMapAsync { map ->
             state.map = map
+            // 用户开始拖动地图时通知外部关闭跟随，避免相机被定位更新拉回
+            map.addOnMoveListener(object : MapLibreMap.OnMoveListener {
+                override fun onMoveBegin(detector: MoveGestureDetector) = onUserGesture()
+                override fun onMove(detector: MoveGestureDetector) = Unit
+                override fun onMoveEnd(detector: MoveGestureDetector) = Unit
+            })
             applySource(state, currentSource)
         }
         onDispose {}
+    }
+
+    // 定位按钮回正请求：下次定位更新时强制移动相机
+    LaunchedEffect(recenterRequest) {
+        if (recenterRequest > 0) state.forceMove = true
     }
 
     // 地图源切换
@@ -83,7 +97,8 @@ fun GpsMapView(
             state.currentLon = currentLon
             updateLocation(state, showMyLocation)
             if (followLocation) {
-                moveCamera(state, currentLat, currentLon, force = state.style == null)
+                moveCamera(state, currentLat, currentLon, force = state.style == null || state.forceMove)
+                state.forceMove = false
             }
         }
     }
@@ -151,6 +166,7 @@ private class MapViewState {
     var loadedSource: String? = null
     var currentLat: Double? = null
     var currentLon: Double? = null
+    var forceMove = false
     var trackPoints: List<Pair<Double, Double>> = emptyList()
     var annotations: List<Triple<Double, Double, String>> = emptyList()
 }

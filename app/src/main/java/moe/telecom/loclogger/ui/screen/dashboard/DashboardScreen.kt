@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,14 +54,14 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     var mapSource by remember { mutableStateOf(MapSources.AMAP.name) }
     var showMapSourceMenu by remember { mutableStateOf(false) }
+    var followLocation by remember { mutableStateOf(true) }
+    var recenterRequest by remember { mutableIntStateOf(0) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+            modifier = Modifier.fillMaxSize()
         ) {
-            // 地图区域
+            // 地图区域（固定不滚动，避免滚动容器抢地图手势）
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -70,8 +71,10 @@ fun DashboardScreen(
                     currentLat = uiState.latitude,
                     currentLon = uiState.longitude,
                     mapSourceName = mapSource,
-                    followLocation = true,
+                    followLocation = followLocation,
+                    recenterRequest = recenterRequest,
                     showMyLocation = true,
+                    onUserGesture = { followLocation = false },
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -103,7 +106,10 @@ fun DashboardScreen(
 
                 // 定位按钮
                 IconButton(
-                    onClick = { /* 触发重新定位 */ },
+                    onClick = {
+                        followLocation = true
+                        recenterRequest++
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(12.dp)
@@ -146,9 +152,12 @@ fun DashboardScreen(
                 }
             }
 
-            // 数据面板
+            // 数据面板（独立滚动）
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // 经纬度卡片
