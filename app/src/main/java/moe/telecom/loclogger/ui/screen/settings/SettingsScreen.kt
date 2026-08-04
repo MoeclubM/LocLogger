@@ -1,6 +1,7 @@
 package moe.telecom.loclogger.ui.screen.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -278,6 +279,7 @@ private fun SettingsSwitchItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -309,6 +311,7 @@ private fun SettingsDropdownItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { expanded = true }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -323,9 +326,7 @@ private fun SettingsDropdownItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Box(
-            modifier = Modifier.clickable { expanded = true }
-        ) {
+        Box {
             Text(
                 text = options[selectedIndex],
                 fontSize = 14.sp,
@@ -358,6 +359,7 @@ private fun ColorPickerItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { expanded = true }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -376,7 +378,6 @@ private fun ColorPickerItem(
                 modifier = Modifier
                     .padding(8.dp)
                     .size(24.dp)
-                    .clickable { expanded = true }
             ) {}
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 keyColorOptions.forEachIndexed { index, color ->
@@ -386,7 +387,7 @@ private fun ColorPickerItem(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                androidx.compose.foundation.layout.Box(
+                                Box(
                                     modifier = Modifier
                                         .size(16.dp)
                                         .background(Color(color), RoundedCornerShape(50))
@@ -403,13 +404,4 @@ private fun ColorPickerItem(
             }
         }
     }
-}
-
-// 简单的Box
-@Composable
-private fun Box(
-    modifier: Modifier = Modifier,
-    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit
-) {
-    androidx.compose.foundation.layout.Box(modifier = modifier, content = content)
 }
