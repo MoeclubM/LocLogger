@@ -345,7 +345,9 @@ class TrackingService : Service() {
             )
             // 注册 GnssStatus 回调获取卫星数
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                locationManager.registerGnssStatusCallback(gnssCallback, null)
+                // handler 必须绑定 Looper：startLocationUpdates 可能在后台协程线程调用，
+                // 传 null 会尝试用当前线程创建 Handler 导致 RuntimeException
+                locationManager.registerGnssStatusCallback(gnssCallback, Looper.getMainLooper())
             }
         } catch (e: SecurityException) {
             Log.e(TAG, "No location permission", e)
