@@ -12,8 +12,9 @@ class GpsLoggerApp : Application() {
         Configuration.getInstance().apply {
             userAgentValue = packageName
             tileFileSystemCacheMaxBytes = 500L * 1024 * 1024 // 500MB 瓦片缓存
-            isDebugMode = false
-            isDebugTileProviders = false
+            // TODO(debug): 定位瓦片不加载问题后需改回 false
+            isDebugMode = true
+            isDebugTileProviders = true
         }
     }
 }

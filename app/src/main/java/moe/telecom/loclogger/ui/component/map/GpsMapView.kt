@@ -52,7 +52,20 @@ fun GpsMapView(
             userAgentValue = context.packageName
             tileFileSystemCacheMaxBytes = 500L * 1024 * 1024 // 500MB 缓存
         }
-        MapView(context).apply {
+        // osmdroid 6.1.x：onResume() 必须在视图 attach 到窗口之后调用，
+        // 否则瓦片加载器（tile provider）不会启动，瓦片永远不下载。
+        // 因此覆写 attach/detach 生命周期，确保时机正确。
+        object : MapView(context) {
+            override fun onAttachedToWindow() {
+                super.onAttachedToWindow()
+                onResume()
+            }
+
+            override fun onDetachedFromWindow() {
+                super.onDetachedFromWindow()
+                onPause()
+            }
+        }.apply {
             setTileSource(MapSources.OSM)
             setMultiTouchControls(true)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
@@ -172,13 +185,10 @@ fun GpsMapView(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_RESUME -> if (mapView.isAttachedToWindow) mapView.onResume()
                 Lifecycle.Event.ON_PAUSE -> mapView.onPause()
                 else -> {}
             }
-        }
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-            mapView.onResume()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
