@@ -44,7 +44,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 
 /**
  * 权限请求状态
@@ -248,7 +251,22 @@ fun PermissionRequester(
         )
     }
 
+    // 进入组合后自动启动权限请求流程（仅首次组合执行一次）
+    LaunchedEffect(Unit) {
+        startPermissionFlow()
+    }
+
+    // 同时暴露手动触发入口（供 UI 按钮使用）
     content { startPermissionFlow() }
+}
+
+/**
+ * Hilt EntryPoint：供非 Activity/ViewModel 场景（如设置页）获取 PermissionManager
+ */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface PermissionEntryPoint {
+    fun permissionManager(): PermissionManager
 }
 
 /**

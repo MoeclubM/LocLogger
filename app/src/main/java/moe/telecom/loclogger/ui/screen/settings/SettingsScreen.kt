@@ -16,11 +16,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.DisplaySettings
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FiberManualRecord
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Card
@@ -44,10 +42,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.Manifest
+import android.app.Activity
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import dagger.hilt.android.EntryPointAccessors
 import moe.telecom.loclogger.ui.theme.ColorMode
 import moe.telecom.loclogger.ui.theme.UiMode
 import moe.telecom.loclogger.ui.theme.keyColorOptions
+import moe.telecom.loclogger.ui.util.PermissionEntryPoint
+import moe.telecom.loclogger.ui.util.PermissionManager
+import moe.telecom.loclogger.ui.util.PermissionStatusCard
 import moe.telecom.loclogger.viewmodel.SettingsViewModel
 
 @Composable
@@ -55,6 +63,17 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val permissionManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            PermissionEntryPoint::class.java
+        ).permissionManager()
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { /* 结果无需额外处理，PermissionStatusCard 会随重组刷新状态 */ }
 
     Column(
         modifier = Modifier
@@ -178,15 +197,24 @@ fun SettingsScreen(
             title = "权限与保活",
             icon = Icons.Default.Security
         ) {
-            SettingsActionItem(
-                title = "通知权限",
-                subtitle = "显示记录状态通知",
-                icon = Icons.Default.Notifications
-            )
-            SettingsActionItem(
-                title = "电池优化白名单",
-                subtitle = "防止系统杀后台",
-                icon = Icons.Default.BatteryAlert
+            PermissionStatusCard(
+                permissionManager = permissionManager,
+                onRequestPermissions = {
+                    permissionLauncher.launch(
+                        buildList {
+                            add(Manifest.permission.ACCESS_FINE_LOCATION)
+                            add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                add(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        }.toTypedArray()
+                    )
+                },
+                onOpenAutoStart = { activity?.let { permissionManager.openAutoStartSettings(it) } },
+                onRequestBattery = { activity?.let { permissionManager.requestIgnoreBatteryOptimizations(it) } }
             )
         }
 
@@ -372,38 +400,6 @@ private fun ColorPickerItem(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SettingsActionItem(
-    title: String,
-    subtitle: String,
-    icon: ImageVector
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.padding(horizontal = 12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

@@ -31,6 +31,7 @@ import moe.telecom.loclogger.ui.theme.GpsLoggerTheme
 import moe.telecom.loclogger.ui.theme.UiMode
 import moe.telecom.loclogger.ui.theme.keyColorOptions
 import moe.telecom.loclogger.ui.util.PermissionManager
+import moe.telecom.loclogger.ui.util.PermissionRequester
 import moe.telecom.loclogger.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -65,7 +66,10 @@ class MainActivity : ComponentActivity() {
                 enableFloatingBottomBarBlur = settings.enableFloatingBottomBarBlur
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    MainContent()
+                    // 启动时自动请求定位/通知权限（未授权才弹窗）
+                    PermissionRequester(permissionManager = permissionManager) { _ ->
+                        MainContent()
+                    }
                 }
             }
         }
