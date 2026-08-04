@@ -5,6 +5,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -30,8 +31,8 @@ import moe.telecom.loclogger.ui.screen.tracks.TracksScreen
 import moe.telecom.loclogger.ui.theme.ColorMode
 import moe.telecom.loclogger.ui.theme.GpsLoggerTheme
 import moe.telecom.loclogger.ui.theme.LocalEnableBlur
+import moe.telecom.loclogger.ui.theme.LocalEnableFloatingBottomBar
 import moe.telecom.loclogger.ui.theme.LocalEnableFloatingBottomBarBlur
-import moe.telecom.loclogger.ui.theme.LocalLayerBackdrop
 import moe.telecom.loclogger.ui.theme.LocalUiMode
 import moe.telecom.loclogger.ui.theme.UiMode
 import moe.telecom.loclogger.ui.theme.keyColorOptions
@@ -39,6 +40,8 @@ import moe.telecom.loclogger.ui.util.PermissionManager
 import moe.telecom.loclogger.ui.util.PermissionRequester
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import moe.telecom.loclogger.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -89,15 +92,28 @@ private fun MainContent() {
     val coroutineScope = rememberCoroutineScope()
     val mainPagerState = rememberMainPagerState(pagerState, coroutineScope)
 
-    // Liquid Glass 底栏：捕获页面内容作为毛玻璃背景（先铺不透明背景避免透明区域扩散）
-    val isMiuix = LocalUiMode.current == UiMode.Miuix
-    val backdropBackground = MaterialTheme.colorScheme.background
+    // Liquid Glass（参考 SukiSU）：双 backdrop 捕获
+    //  - blurBackdrop：普通导航栏毛玻璃（textureBlur），仅启用全局模糊时创建
+    //  - backdrop：浮动底栏 Liquid Glass 折射/模糊（drawBackdrop），浮动+模糊开启时捕获页面
+    val uiMode = LocalUiMode.current
+    val isMiuix = uiMode == UiMode.Miuix
+    val enableBlur = LocalEnableBlur.current
+    val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
+    val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
+
+    val surfaceColor = if (isMiuix) MiuixTheme.colorScheme.surface else MaterialTheme.colorScheme.background
+    val blurBackdrop = if (enableBlur && isRenderEffectSupported()) {
+        rememberLayerBackdrop {
+            drawRect(surfaceColor)
+            drawContent()
+        }
+    } else {
+        null
+    }
     val backdrop = rememberLayerBackdrop {
-        drawRect(backdropBackground)
+        drawRect(surfaceColor)
         drawContent()
     }
-    // 参考 SukiSU：仅启用模糊时捕获页面内容，避免无谓渲染开销
-    val captureBackdrop = isMiuix && (LocalEnableBlur.current || LocalEnableFloatingBottomBarBlur.current)
 
     // 同步页面状态
     LaunchedEffect(pagerState.currentPage, pagerState.currentPageOffsetFraction) {
@@ -105,19 +121,29 @@ private fun MainContent() {
     }
 
     CompositionLocalProvider(
-        LocalMainPagerState provides mainPagerState,
-        LocalLayerBackdrop provides backdrop
+        LocalMainPagerState provides mainPagerState
     ) {
         Scaffold(
-            bottomBar = { BottomBar() }
+            bottomBar = { BottomBar(blurBackdrop = blurBackdrop, backdrop = backdrop) }
         ) { innerPadding ->
-            HorizontalPager(
-                state = pagerState,
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .then(if (captureBackdrop) Modifier.layerBackdrop(backdrop) else Modifier)
-            ) { page ->
+                    .then(if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop) else Modifier)
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (isMiuix && enableFloatingBottomBar && enableFloatingBottomBarBlur) {
+                                Modifier.layerBackdrop(backdrop)
+                            } else {
+                                Modifier
+                            }
+                        )
+                ) { page ->
                 when (page) {
                     0 -> DashboardScreen()
                     1 -> TrackScreen()

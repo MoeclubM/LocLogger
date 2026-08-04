@@ -18,6 +18,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import moe.telecom.loclogger.ui.theme.LocalUiMode
 import moe.telecom.loclogger.ui.theme.UiMode
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import kotlin.math.abs
 
 // 对标 SukiSU MainPagerState
@@ -83,9 +85,11 @@ data class BottomBarBadge(
 @Composable
 fun BottomBar(
     modifier: Modifier = Modifier,
+    blurBackdrop: LayerBackdrop?,
+    backdrop: Backdrop,
 ) {
     when (LocalUiMode.current) {
-        UiMode.Miuix -> BottomBarMiuix(modifier)
+        UiMode.Miuix -> BottomBarMiuix(modifier, blurBackdrop, backdrop)
         UiMode.Material -> BottomBarMaterial(modifier)
     }
 }

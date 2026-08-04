@@ -3,11 +3,11 @@ package moe.telecom.loclogger.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.materialkolor.dynamicColorScheme
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -18,7 +18,6 @@ val LocalColorMode = staticCompositionLocalOf { ColorMode.SYSTEM.value }
 val LocalEnableBlur = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBar = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBarBlur = staticCompositionLocalOf { true }
-val LocalLayerBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 @Composable
 fun GpsLoggerTheme(
@@ -69,5 +68,16 @@ fun GpsLoggerTheme(
                 )
             }
         }
+    }
+}
+
+// 对标 SukiSU：根据颜色模式判断当前是否深色（供 FloatingBottomBar 高光/阴影取色）
+@Composable
+@ReadOnlyComposable
+fun isInDarkTheme(): Boolean {
+    return when (ColorMode.fromInt(LocalColorMode.current)) {
+        ColorMode.DARK -> true
+        ColorMode.LIGHT -> false
+        ColorMode.SYSTEM -> isSystemInDarkTheme()
     }
 }
