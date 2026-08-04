@@ -115,8 +115,8 @@ dependencies {
     // Material Kolor - 动态取色
     implementation(libs.material.kolor)
 
-    // osmdroid - 多源地图
-    implementation(libs.osmdroid.android)
+    // MapLibre - 多源地图（OSM/Google/高德）
+    implementation(libs.maplibre.android)
 
     // Google Play Services Location
     implementation(libs.playservices.location)

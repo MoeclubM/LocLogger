@@ -104,7 +104,7 @@ fun PermissionRequester(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             showSettingsDialog = SettingsPrompt(
                 "Android 11 及以上系统不再提供「始终允许」选项。\n\n" +
-                    "请到系统设置中为 GPS Logger 开启「允许所有时间」定位权限，" +
+                    "请到系统设置中为 LocLogger 开启「允许所有时间」定位权限，" +
                     "以便息屏或切换到其他应用后仍能持续记录轨迹。",
                 blocking = false
             )
@@ -198,7 +198,7 @@ fun PermissionRequester(
                     if (isBackground)
                         "为了在息屏或后台时持续记录轨迹，需要允许「始终允许」定位权限。\n\n如果不授予此权限，切换到其他应用或锁屏后记录可能中断。"
                     else
-                        "GPS Logger 需要定位权限来获取位置信息并记录轨迹。\n\n请授予「精确位置」权限以获得最佳精度。"
+                        "LocLogger 需要定位权限来获取位置信息并记录轨迹。\n\n请授予「精确位置」权限以获得最佳精度。"
                 )
             },
             confirmButton = {

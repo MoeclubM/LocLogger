@@ -220,7 +220,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "GPS Logger v1.0.0",
+            text = "LocLogger v1.0.0",
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -323,7 +323,9 @@ private fun SettingsDropdownItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Box {
+        Box(
+            modifier = Modifier.clickable { expanded = true }
+        ) {
             Text(
                 text = options[selectedIndex],
                 fontSize = 14.sp,
@@ -405,6 +407,9 @@ private fun ColorPickerItem(
 
 // 简单的Box
 @Composable
-private fun Box(content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) {
-    androidx.compose.foundation.layout.Box(content = content)
+private fun Box(
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit
+) {
+    androidx.compose.foundation.layout.Box(modifier = modifier, content = content)
 }

@@ -48,7 +48,7 @@ object TrackExporter {
             }
 
             w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-            w.write("<gpx version=\"$version\" creator=\"GPS Logger\" " +
+            w.write("<gpx version=\"$version\" creator=\"LocLogger\" " +
                     "xmlns=\"$ns\" " +
                     "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
                     "xsi:schemaLocation=\"$schemaLoc\">\n")
@@ -175,7 +175,7 @@ object TrackExporter {
         val writer = OutputStreamWriter(out, Charsets.UTF_8)
         val timeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         writer.use { w ->
-            w.write("GPS Logger 轨迹记录\n")
+            w.write("LocLogger 轨迹记录\n")
             w.write("===================\n")
             w.write("名称: ${track.name}\n")
             w.write("开始时间: ${timeFormat.format(Date(track.startTime))}\n")

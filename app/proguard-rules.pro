@@ -13,3 +13,9 @@
 
 # Compose
 -dontwarn androidx.compose.**
+
+# MapLibre
+-dontwarn org.maplibre.**
+-keep class org.maplibre.android.** { *; }
+-keep class org.maplibre.geojson.** { *; }
+-keep class org.maplibre.location.** { *; }

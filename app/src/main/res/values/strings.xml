@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">GPS Logger</string>
+    <string name="app_name">LocLogger</string>
 
     <!-- 底部导航 -->
     <string name="tab_dashboard">定位</string>
