@@ -51,7 +51,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var mapSource by remember { mutableStateOf(MapSources.OSM.name) }
+    var mapSource by remember { mutableStateOf(MapSources.AMAP.name) }
     var showMapSourceMenu by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {

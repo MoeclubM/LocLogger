@@ -50,7 +50,7 @@ fun GpsMapView(
     currentLon: Double? = null,
     trackPoints: List<Pair<Double, Double>> = emptyList(),
     annotations: List<Triple<Double, Double, String>> = emptyList(),
-    mapSourceName: String = "OpenStreetMap",
+    mapSourceName: String = "高德地图",
     followLocation: Boolean = true,
     showMyLocation: Boolean = true
 ) {
