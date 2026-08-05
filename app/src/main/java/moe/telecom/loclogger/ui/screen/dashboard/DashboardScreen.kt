@@ -2,6 +2,7 @@ package moe.telecom.loclogger.ui.screen.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,9 +43,9 @@ import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.ui.component.map.GpsMapView
 import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
+import moe.telecom.loclogger.viewmodel.DashboardUiState
 import moe.telecom.loclogger.viewmodel.DashboardViewModel
 
-@Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -54,214 +55,261 @@ fun DashboardScreen(
     var followLocation by remember { mutableStateOf(true) }
     var recenterRequest by remember { mutableIntStateOf(0) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // 地图区域（固定不滚动，避免滚动容器抢地图手势）
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(280.dp)
-            ) {
-                GpsMapView(
-                    currentLat = uiState.latitude,
-                    currentLon = uiState.longitude,
-                    mapSourceName = mapSource,
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val portrait = maxWidth <= maxHeight
+        if (portrait) {
+            // 竖屏：地图在上、数据在下
+            Column(modifier = Modifier.fillMaxSize()) {
+                MapArea(
+                    uiState = uiState,
+                    mapSource = mapSource,
+                    showMapSourceMenu = showMapSourceMenu,
                     followLocation = followLocation,
                     recenterRequest = recenterRequest,
-                    showMyLocation = true,
+                    onMapSourceChange = { mapSource = it },
+                    onShowMenuChange = { showMapSourceMenu = it },
                     onUserGesture = { followLocation = false },
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // 地图源切换按钮
-                Box(modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
-                    IconButton(
-                        onClick = { showMapSourceMenu = true },
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                    ) {
-                        Icon(Icons.Default.Layers, contentDescription = "地图源")
-                    }
-                    DropdownMenu(
-                        expanded = showMapSourceMenu,
-                        onDismissRequest = { showMapSourceMenu = false }
-                    ) {
-                        MapSources.all.forEach { source ->
-                            DropdownMenuItem(
-                                text = { Text(source.name) },
-                                onClick = {
-                                    mapSource = source.name
-                                    showMapSourceMenu = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // 定位按钮
-                IconButton(
-                    onClick = {
+                    onRecenter = {
                         followLocation = true
                         recenterRequest++
                     },
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(12.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                ) {
-                    Icon(Icons.Default.MyLocation, contentDescription = "定位")
-                }
-
-                // 录制状态指示
-                if (uiState.isRecording) {
-                    GlassCard(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(12.dp),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(MaterialTheme.colorScheme.onError)
-                            )
-                            Text(
-                                text = if (uiState.isPaused) "已暂停" else "录制中",
-                                color = MaterialTheme.colorScheme.onError,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
+                        .fillMaxWidth()
+                        .height(280.dp)
+                )
+                DataPanel(uiState = uiState, modifier = Modifier.weight(1f))
             }
+        } else {
+            // 横屏：左地图右数据
+            Row(modifier = Modifier.fillMaxSize()) {
+                MapArea(
+                    uiState = uiState,
+                    mapSource = mapSource,
+                    showMapSourceMenu = showMapSourceMenu,
+                    followLocation = followLocation,
+                    recenterRequest = recenterRequest,
+                    onMapSourceChange = { mapSource = it },
+                    onShowMenuChange = { showMapSourceMenu = it },
+                    onUserGesture = { followLocation = false },
+                    onRecenter = {
+                        followLocation = true
+                        recenterRequest++
+                    },
+                    modifier = Modifier.weight(1.1f)
+                )
+                DataPanel(uiState = uiState, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
 
-            // 数据面板（独立滚动）
-            Column(
+@Composable
+private fun MapArea(
+    uiState: DashboardUiState,
+    mapSource: String,
+    showMapSourceMenu: Boolean,
+    followLocation: Boolean,
+    recenterRequest: Int,
+    onMapSourceChange: (String) -> Unit,
+    onShowMenuChange: (Boolean) -> Unit,
+    onUserGesture: () -> Unit,
+    onRecenter: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        GpsMapView(
+            currentLat = uiState.latitude,
+            currentLon = uiState.longitude,
+            mapSourceName = mapSource,
+            followLocation = followLocation,
+            recenterRequest = recenterRequest,
+            showMyLocation = true,
+            onUserGesture = onUserGesture,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // 地图源切换按钮
+        Box(modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
+            IconButton(
+                onClick = { onShowMenuChange(true) },
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
             ) {
-                // 经纬度卡片
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        LocationRow(
-                            label = "纬度",
-                            value = uiState.latitude?.let { formatDMS(it, true) } ?: "--"
-                        )
-                        LocationRow(
-                            label = "经度",
-                            value = uiState.longitude?.let { formatDMS(it, false) } ?: "--"
-                        )
-                        LocationRow(
-                            label = "时间",
-                            value = uiState.time ?: "--"
-                        )
-                    }
-                }
-
-                // 卫星信息
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "卫星",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "${uiState.satellitesUsed}/${uiState.satellitesVisible}",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
-                            )
+                Icon(Icons.Default.Layers, contentDescription = "地图源")
+            }
+            DropdownMenu(
+                expanded = showMapSourceMenu,
+                onDismissRequest = { onShowMenuChange(false) }
+            ) {
+                MapSources.all.forEach { source ->
+                    DropdownMenuItem(
+                        text = { Text(source.name) },
+                        onClick = {
+                            onMapSourceChange(source.name)
+                            onShowMenuChange(false)
                         }
-                        GpsStatusIndicator(satellites = uiState.satellitesUsed)
-                    }
-                }
-
-                // 数据网格
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    DataCard(
-                        label = "高度",
-                        value = uiState.altitude?.let { "${it.toInt()} 米" } ?: "--",
-                        modifier = Modifier.weight(1f)
-                    )
-                    DataCard(
-                        label = "速度",
-                        value = uiState.speed?.let { "${String.format("%.1f", it * 3.6)} km/h" } ?: "--",
-                        modifier = Modifier.weight(1f)
                     )
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    DataCard(
-                        label = "精度",
-                        value = uiState.accuracy?.let { "${String.format("%.1f", it)} 米" } ?: "--",
-                        modifier = Modifier.weight(1f)
-                    )
-                    DataCard(
-                        label = "方向",
-                        value = uiState.bearing?.let { bearingToDirection(it) } ?: "--",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                // 录制统计
-                if (uiState.isRecording) {
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            StatColumn("点数", uiState.trackPoints.toString())
-                            StatColumn("距离", formatDistance(uiState.distance))
-                            StatColumn("时长", formatDuration(uiState.duration))
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(LocalBottomBarInset.current + 24.dp))
             }
         }
 
+        // 定位按钮
+        IconButton(
+            onClick = onRecenter,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(12.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+        ) {
+            Icon(Icons.Default.MyLocation, contentDescription = "定位")
+        }
+
+        // 录制状态指示
+        if (uiState.isRecording) {
+            GlassCard(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.onError)
+                    )
+                    Text(
+                        text = if (uiState.isPaused) "已暂停" else "录制中",
+                        color = MaterialTheme.colorScheme.onError,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DataPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 经纬度卡片
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                LocationRow(
+                    label = "纬度",
+                    value = uiState.latitude?.let { formatDMS(it, true) } ?: "--"
+                )
+                LocationRow(
+                    label = "经度",
+                    value = uiState.longitude?.let { formatDMS(it, false) } ?: "--"
+                )
+                LocationRow(
+                    label = "时间",
+                    value = uiState.time ?: "--"
+                )
+            }
+        }
+
+        // 卫星信息
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "卫星",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${uiState.satellitesUsed}/${uiState.satellitesVisible}",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                GpsStatusIndicator(satellites = uiState.satellitesUsed)
+            }
+        }
+
+        // 数据网格
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            DataCard(
+                label = "高度",
+                value = uiState.altitude?.let { "${it.toInt()} 米" } ?: "--",
+                modifier = Modifier.weight(1f)
+            )
+            DataCard(
+                label = "速度",
+                value = uiState.speed?.let { "${String.format("%.1f", it * 3.6)} km/h" } ?: "--",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            DataCard(
+                label = "精度",
+                value = uiState.accuracy?.let { "${String.format("%.1f", it)} 米" } ?: "--",
+                modifier = Modifier.weight(1f)
+            )
+            DataCard(
+                label = "方向",
+                value = uiState.bearing?.let { bearingToDirection(it) } ?: "--",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // 录制统计
+        if (uiState.isRecording) {
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatColumn("点数", uiState.trackPoints.toString())
+                    StatColumn("距离", formatDistance(uiState.distance))
+                    StatColumn("时长", formatDuration(uiState.duration))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(LocalBottomBarInset.current + 24.dp))
     }
 }
 
