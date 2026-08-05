@@ -19,18 +19,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import moe.telecom.loclogger.ui.LocalGlassBackdrop
 import moe.telecom.loclogger.ui.LocalMainPagerState
 import moe.telecom.loclogger.ui.component.bottombar.BottomBar
 import moe.telecom.loclogger.ui.component.bottombar.rememberMainPagerState
 import moe.telecom.loclogger.ui.screen.dashboard.DashboardScreen
 import moe.telecom.loclogger.ui.screen.settings.SettingsScreen
-import moe.telecom.loclogger.ui.screen.track.TrackScreen
-import moe.telecom.loclogger.ui.screen.tracks.TracksScreen
 import moe.telecom.loclogger.ui.screen.track.TrackDetailScreen
+import moe.telecom.loclogger.ui.screen.track.TrackScreen
 import moe.telecom.loclogger.ui.screen.tracks.TrackItem
+import moe.telecom.loclogger.ui.screen.tracks.TracksScreen
 import moe.telecom.loclogger.ui.theme.ColorMode
 import moe.telecom.loclogger.ui.theme.GpsLoggerTheme
 import moe.telecom.loclogger.ui.theme.LocalEnableBlur
@@ -41,13 +44,13 @@ import moe.telecom.loclogger.ui.theme.UiMode
 import moe.telecom.loclogger.ui.theme.keyColorOptions
 import moe.telecom.loclogger.ui.util.PermissionManager
 import moe.telecom.loclogger.ui.util.PermissionRequester
+import moe.telecom.loclogger.viewmodel.MainViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import moe.telecom.loclogger.viewmodel.MainViewModel
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -61,7 +64,6 @@ class MainActivity : ComponentActivity() {
             val viewModel: MainViewModel = hiltViewModel()
             val settings by viewModel.settingsState.collectAsState()
 
-            // 保持屏幕常亮
             LaunchedEffect(settings.keepScreenOn) {
                 if (settings.keepScreenOn) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -79,17 +81,9 @@ class MainActivity : ComponentActivity() {
                 enableFloatingBottomBarBlur = settings.enableFloatingBottomBarBlur
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    // 启动时自动请求定位/通知权限（未授权才弹窗）
                     PermissionRequester(permissionManager = permissionManager) { _ ->
                         MainContent()
                     }
-                }
-
-                selectedTrack?.let { track ->
-                    TrackDetailScreen(
-                        trackItem = track,
-                        onBack = { selectedTrack = null }
-                    )
                 }
             }
         }
@@ -103,9 +97,6 @@ private fun MainContent() {
     val coroutineScope = rememberCoroutineScope()
     val mainPagerState = rememberMainPagerState(pagerState, coroutineScope)
 
-    // Liquid Glass（参考 SukiSU）：双 backdrop 捕获
-    //  - blurBackdrop：普通导航栏毛玻璃（textureBlur），仅启用全局模糊时创建
-    //  - backdrop：浮动底栏 Liquid Glass 折射/模糊（drawBackdrop），浮动+模糊开启时捕获页面
     val uiMode = LocalUiMode.current
     val isMiuix = uiMode == UiMode.Miuix
     val enableBlur = LocalEnableBlur.current
@@ -126,13 +117,13 @@ private fun MainContent() {
         drawContent()
     }
 
-    // 同步页面状态
     LaunchedEffect(pagerState.currentPage, pagerState.currentPageOffsetFraction) {
         mainPagerState.syncPage()
     }
 
     CompositionLocalProvider(
-        LocalMainPagerState provides mainPagerState
+        LocalMainPagerState provides mainPagerState,
+        LocalGlassBackdrop provides (if (isMiuix) backdrop else null)
     ) {
         Scaffold(
             bottomBar = { BottomBar(blurBackdrop = blurBackdrop, backdrop = backdrop) }
