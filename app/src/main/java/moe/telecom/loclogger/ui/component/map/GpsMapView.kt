@@ -69,6 +69,10 @@ fun GpsMapView(
     DisposableEffect(mapView) {
         mapView.getMapAsync { map ->
             state.map = map
+            // 定位前先把相机移到中国范围，避免高德在默认(0,0)境外无数据返回空白瓦片
+            map.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(LatLng(35.0, 105.0), 4.0)
+            )
             // 用户开始拖动地图时通知外部关闭跟随，避免相机被定位更新拉回
             map.addOnMoveListener(object : MapLibreMap.OnMoveListener {
                 override fun onMoveBegin(detector: MoveGestureDetector) = onUserGesture()

@@ -128,32 +128,37 @@ private fun MainContent() {
         Scaffold(
             bottomBar = { BottomBar(blurBackdrop = blurBackdrop, backdrop = backdrop) }
         ) { innerPadding ->
+            // 毛玻璃 backdrop 需捕获整屏（含底栏后方），否则底栏后方空区域会被模糊着色器填充成黑色
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
                     .then(if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop) else Modifier)
             ) {
-                HorizontalPager(
-                    state = pagerState,
-                    userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null,
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
-                ) { page ->
-                    when (page) {
-                        0 -> DashboardScreen()
-                        1 -> TrackScreen()
-                        2 -> TracksScreen(onTrackClick = { selectedTrack = it })
-                        3 -> SettingsScreen()
+                        .padding(innerPadding)
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        when (page) {
+                            0 -> DashboardScreen()
+                            1 -> TrackScreen()
+                            2 -> TracksScreen(onTrackClick = { selectedTrack = it })
+                            3 -> SettingsScreen()
+                        }
                     }
-                }
 
-                selectedTrack?.let { track ->
-                    TrackDetailScreen(
-                        trackItem = track,
-                        onBack = { selectedTrack = null }
-                    )
+                    selectedTrack?.let { track ->
+                        TrackDetailScreen(
+                            trackItem = track,
+                            onBack = { selectedTrack = null }
+                        )
+                    }
                 }
             }
         }
