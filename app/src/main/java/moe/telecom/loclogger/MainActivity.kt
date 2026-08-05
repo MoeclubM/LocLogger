@@ -134,18 +134,19 @@ private fun MainContent() {
         Scaffold(
             bottomBar = {}
         ) { innerPadding ->
-            // 毛玻璃 backdrop 需捕获整屏（含底栏后方），否则底栏后方空区域会被模糊着色器填充成黑色
-            Box(
-                modifier = Modifier
+            // 毛玻璃 backdrop 只捕获页面内容（整屏含底栏后方），底栏作为捕获层之外的兄弟节点采样，
+            Box(modifier = Modifier.fillMaxSize()) {
+                // 页面内容捕获层（整屏，底栏在层外）
+                Box(modifier = Modifier
                     .fillMaxSize()
                     .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
                     .then(if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop) else Modifier)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
                     HorizontalPager(
                         state = pagerState,
                         userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null,
@@ -167,6 +168,7 @@ private fun MainContent() {
                     }
                 }
 
+                }
                 // 底部栏覆盖在内容之上（不占内边距），内容延伸到其后方供毛玻璃采样
                 BottomBar(
                     blurBackdrop = blurBackdrop,
