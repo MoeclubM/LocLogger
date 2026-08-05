@@ -46,6 +46,7 @@ import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.viewmodel.DashboardUiState
 import moe.telecom.loclogger.viewmodel.DashboardViewModel
 
+@Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
