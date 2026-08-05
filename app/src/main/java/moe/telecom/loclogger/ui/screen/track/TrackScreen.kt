@@ -88,6 +88,29 @@ fun TrackScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 停止记录（置顶显眼）
+            Button(
+                onClick = { viewModel.stop() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            ) {
+                Icon(Icons.Default.Stop, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "停止记录",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
             Spacer(modifier = Modifier.height(4.dp))
 
             // 统计数据
@@ -131,7 +154,7 @@ fun TrackScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 操作按钮
+            // 次要操作
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -172,14 +195,6 @@ fun TrackScreen(
                     Icon(Icons.Default.Bookmark, contentDescription = "批注")
                 }
 
-                FilledIconButton(
-                    onClick = { viewModel.stop() },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
-                    Icon(Icons.Default.Stop, contentDescription = "停止")
-                }
             }
         } else {
             // 未录制状态
