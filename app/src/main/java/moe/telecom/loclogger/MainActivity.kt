@@ -22,9 +22,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import moe.telecom.loclogger.ui.LocalGlassBackdrop
+import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.ui.LocalMainPagerState
 import moe.telecom.loclogger.ui.component.bottombar.BottomBar
 import moe.telecom.loclogger.ui.component.bottombar.rememberMainPagerState
@@ -78,7 +81,9 @@ class MainActivity : ComponentActivity() {
                 colorMode = ColorMode.fromInt(settings.colorMode),
                 enableBlur = settings.enableBlur,
                 enableFloatingBottomBar = settings.enableFloatingBottomBar,
-                enableFloatingBottomBarBlur = settings.enableFloatingBottomBarBlur
+                enableFloatingBottomBarBlur = settings.enableFloatingBottomBarBlur,
+                dynamicColor = settings.dynamicColor,
+                pureBlack = settings.pureBlack
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     PermissionRequester(permissionManager = permissionManager) { _ ->
@@ -123,10 +128,11 @@ private fun MainContent() {
 
     CompositionLocalProvider(
         LocalMainPagerState provides mainPagerState,
-        LocalGlassBackdrop provides (if (isMiuix) backdrop else null)
+        LocalGlassBackdrop provides (if (isMiuix) backdrop else null),
+        LocalBottomBarInset provides if (enableFloatingBottomBar) 68.dp else 64.dp
     ) {
         Scaffold(
-            bottomBar = { BottomBar(blurBackdrop = blurBackdrop, backdrop = backdrop) }
+            bottomBar = {}
         ) { innerPadding ->
             // 毛玻璃 backdrop 需捕获整屏（含底栏后方），否则底栏后方空区域会被模糊着色器填充成黑色
             Box(
@@ -160,6 +166,13 @@ private fun MainContent() {
                         )
                     }
                 }
+
+                // 底部栏覆盖在内容之上（不占内边距），内容延伸到其后方供毛玻璃采样
+                BottomBar(
+                    blurBackdrop = blurBackdrop,
+                    backdrop = backdrop,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
     }

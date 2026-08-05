@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.viewmodel.TrackViewModel
 
@@ -204,6 +205,8 @@ fun TrackScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(LocalBottomBarInset.current + 16.dp))
     }
 }
 

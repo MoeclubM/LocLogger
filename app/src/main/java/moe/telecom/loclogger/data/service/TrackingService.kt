@@ -100,11 +100,11 @@ class TrackingService : Service() {
     private var maxAlt: Double? = null
     private var minAlt: Double? = null
     private var durationUpdateJob: Job? = null
+    private var locationUpdatesStarted = false
 
     private val trackNameFormat = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault())
 
     private val locationListener = LocationListener { location ->
-        if (_trackingState.value.isPaused) return@LocationListener
         handleLocationUpdate(location)
     }
 
@@ -133,6 +133,8 @@ class TrackingService : Service() {
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
+        // 实时定位：服务绑定即开始监听，未录制也能显示定位
+        startLocationUpdates()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -146,7 +148,7 @@ class TrackingService : Service() {
                 addAnnotation(desc)
             }
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     fun startTracking() {
@@ -216,13 +218,24 @@ class TrackingService : Service() {
                 altDiff = altDiff
             )
 
-            stopLocationUpdates()
             releaseWakeLock()
             durationUpdateJob?.cancel()
             stopForeground(STOP_FOREGROUND_REMOVE)
+            // 清除 started 状态：解绑后服务即销毁；绑定期间仍持续提供实时定位
             stopSelf()
 
-            _trackingState.value = TrackingState()
+            // 保留实时定位字段，仅清空录制状态；服务继续提供实时定位直到解绑
+            val live = _trackingState.value
+            _trackingState.value = TrackingState(
+                latitude = live.latitude,
+                longitude = live.longitude,
+                altitude = live.altitude,
+                speed = live.speed,
+                accuracy = live.accuracy,
+                bearing = live.bearing,
+                satellitesUsed = live.satellitesUsed,
+                satellitesVisible = live.satellitesVisible
+            )
             currentTrackId = null
             lastLocation = null
             totalDistance = 0.0
@@ -255,8 +268,26 @@ class TrackingService : Service() {
     }
 
     private fun handleLocationUpdate(location: Location) {
-        val trackId = currentTrackId ?: return
         val now = System.currentTimeMillis()
+        val state = _trackingState.value
+
+        // 实时定位：无论是否录制都更新坐标，未录制也能显示定位
+        _trackingState.value = state.copy(
+            latitude = location.latitude,
+            longitude = location.longitude,
+            altitude = if (location.hasAltitude()) location.altitude else null,
+            speed = if (location.hasSpeed()) location.speed else null,
+            accuracy = if (location.hasAccuracy()) location.accuracy else null,
+            bearing = if (location.hasBearing()) location.bearing else null,
+            lastUpdateTime = now
+        )
+
+        // 仅录制阶段写库与统计
+        val trackId = currentTrackId
+        if (trackId == null || !_trackingState.value.isRecording || _trackingState.value.isPaused) {
+            lastLocation = location
+            return
+        }
 
         // 计算距离
         var segmentDistance = 0f
@@ -344,11 +375,12 @@ class TrackingService : Service() {
                 locationListener,
                 Looper.getMainLooper()
             )
-            // 注册 GnssStatus 回调获取卫星数
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            // 注册 GnssStatus 回调获取卫星数（仅首次，避免重复注册）
+            if (!locationUpdatesStarted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 // handler 必须绑定 Looper：startLocationUpdates 可能在后台协程线程调用，
                 // 传 null 会尝试用当前线程创建 Handler 导致 RuntimeException
                 locationManager.registerGnssStatusCallback(gnssCallback, Handler(Looper.getMainLooper()))
+                locationUpdatesStarted = true
             }
         } catch (e: SecurityException) {
             Log.e(TAG, "No location permission", e)
@@ -357,8 +389,9 @@ class TrackingService : Service() {
 
     private fun stopLocationUpdates() {
         locationManager.removeUpdates(locationListener)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (locationUpdatesStarted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             locationManager.unregisterGnssStatusCallback(gnssCallback)
+            locationUpdatesStarted = false
         }
     }
 

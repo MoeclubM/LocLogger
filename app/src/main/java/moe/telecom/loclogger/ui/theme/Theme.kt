@@ -1,12 +1,15 @@
 package moe.telecom.loclogger.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.dynamicColorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -18,6 +21,8 @@ val LocalColorMode = staticCompositionLocalOf { ColorMode.SYSTEM.value }
 val LocalEnableBlur = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBar = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBarBlur = staticCompositionLocalOf { true }
+val LocalDynamicColor = staticCompositionLocalOf { false }
+val LocalPureBlack = staticCompositionLocalOf { false }
 
 @Composable
 fun GpsLoggerTheme(
@@ -27,10 +32,23 @@ fun GpsLoggerTheme(
     enableBlur: Boolean = true,
     enableFloatingBottomBar: Boolean = true,
     enableFloatingBottomBarBlur: Boolean = true,
+    dynamicColor: Boolean = false,
+    pureBlack: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val darkMode = colorMode.isDark || (colorMode.isSystem && isSystemInDarkTheme())
     val seedColor = Color(themeColor)
+    val context = LocalContext.current
+
+    val materialColorScheme = if (dynamicColor) {
+        if (darkMode) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else {
+        dynamicColorScheme(
+            seedColor = seedColor,
+            isDark = darkMode,
+            isAmoled = pureBlack
+        )
+    }
 
     CompositionLocalProvider(
         LocalUiMode provides uiMode,
@@ -38,16 +56,13 @@ fun GpsLoggerTheme(
         LocalEnableBlur provides enableBlur,
         LocalEnableFloatingBottomBar provides enableFloatingBottomBar,
         LocalEnableFloatingBottomBarBlur provides enableFloatingBottomBarBlur,
+        LocalDynamicColor provides dynamicColor,
+        LocalPureBlack provides pureBlack,
     ) {
         when (uiMode) {
             UiMode.Material -> {
-                val colorScheme = dynamicColorScheme(
-                    seedColor = seedColor,
-                    isDark = darkMode,
-                    isAmoled = false
-                )
-                androidx.compose.material3.MaterialTheme(
-                    colorScheme = colorScheme,
+                MaterialTheme(
+                    colorScheme = materialColorScheme,
                     typography = AppTypography,
                     content = content
                 )
@@ -56,11 +71,8 @@ fun GpsLoggerTheme(
                 MiuixTheme(
                     colors = if (darkMode) darkColorScheme() else lightColorScheme(),
                     content = {
-                        androidx.compose.material3.MaterialTheme(
-                            colorScheme = dynamicColorScheme(
-                                seedColor = seedColor,
-                                isDark = darkMode
-                            ),
+                        MaterialTheme(
+                            colorScheme = materialColorScheme,
                             typography = AppTypography,
                             content = content
                         )

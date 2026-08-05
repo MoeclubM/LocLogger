@@ -34,6 +34,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.updateThemeColor(index) }
     }
 
+    fun updateEnableBlur(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.updateEnableBlur(enabled) }
+    }
+
     fun updateKeepScreenOn(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.updateKeepScreenOn(enabled) }
     }
@@ -44,6 +48,14 @@ class SettingsViewModel @Inject constructor(
 
     fun updateFloatingBottomBarBlur(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.updateFloatingBottomBarBlur(enabled) }
+    }
+
+    fun updateDynamicColor(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.updateDynamicColor(enabled) }
+    }
+
+    fun updatePureBlack(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.updatePureBlack(enabled) }
     }
 
     fun updateGpsInterval(interval: Int) {

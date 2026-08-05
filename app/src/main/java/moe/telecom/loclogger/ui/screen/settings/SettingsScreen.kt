@@ -53,10 +53,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dagger.hilt.android.EntryPointAccessors
 import moe.telecom.loclogger.ui.theme.ColorMode
 import moe.telecom.loclogger.ui.theme.UiMode
+import moe.telecom.loclogger.ui.theme.isInDarkTheme
 import moe.telecom.loclogger.ui.theme.keyColorOptions
 import moe.telecom.loclogger.ui.util.PermissionEntryPoint
 import moe.telecom.loclogger.ui.util.PermissionManager
 import moe.telecom.loclogger.ui.util.PermissionStatusCard
+import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.viewmodel.SettingsViewModel
 
@@ -120,6 +122,26 @@ fun SettingsScreen(
                 selectedIndex = settings.themeColorIndex,
                 onSelected = { viewModel.updateThemeColor(it) }
             )
+            SettingsSwitchItem(
+                title = "模糊效果",
+                subtitle = "界面毛玻璃/透镜模糊",
+                checked = settings.enableBlur,
+                onCheckedChange = { viewModel.updateEnableBlur(it) }
+            )
+            SettingsSwitchItem(
+                title = "动态取色 (Material You)",
+                subtitle = "跟随系统壁纸自动取色",
+                checked = settings.dynamicColor,
+                onCheckedChange = { viewModel.updateDynamicColor(it) }
+            )
+            if (isInDarkTheme()) {
+                SettingsSwitchItem(
+                    title = "纯黑模式 (AMOLED)",
+                    subtitle = "深色下使用纯黑背景",
+                    checked = settings.pureBlack,
+                    onCheckedChange = { viewModel.updatePureBlack(it) }
+                )
+            }
             SettingsSwitchItem(
                 title = "Liquid Glass 底栏",
                 subtitle = "浮动式毛玻璃导航栏",
@@ -219,7 +241,7 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp + LocalBottomBarInset.current))
 
         Text(
             text = "LocLogger v1.0.0",

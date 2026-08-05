@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.ui.component.map.GpsMapView
 import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
@@ -260,7 +261,7 @@ fun DashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(80.dp + LocalBottomBarInset.current))
             }
         }
 
@@ -269,7 +270,7 @@ fun DashboardScreen(
             onClick = { viewModel.toggleRecording() },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
+                .padding(bottom = LocalBottomBarInset.current + 16.dp),
             containerColor = if (uiState.isRecording)
                 MaterialTheme.colorScheme.error
             else

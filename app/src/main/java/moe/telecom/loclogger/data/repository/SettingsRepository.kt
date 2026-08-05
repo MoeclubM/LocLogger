@@ -27,6 +27,8 @@ class SettingsRepository @Inject constructor(
         val COLOR_MODE = intPreferencesKey("color_mode")
         val THEME_COLOR = intPreferencesKey("theme_color_index")
         val ENABLE_BLUR = booleanPreferencesKey("enable_blur")
+        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val PURE_BLACK = booleanPreferencesKey("pure_black")
         val FLOATING_BAR = booleanPreferencesKey("floating_bottom_bar")
         val FLOATING_BAR_BLUR = booleanPreferencesKey("floating_bottom_bar_blur")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
@@ -48,6 +50,8 @@ class SettingsRepository @Inject constructor(
             colorMode = prefs[Keys.COLOR_MODE] ?: 0,
             themeColorIndex = prefs[Keys.THEME_COLOR] ?: 0,
             enableBlur = prefs[Keys.ENABLE_BLUR] ?: true,
+            dynamicColor = prefs[Keys.DYNAMIC_COLOR] ?: false,
+            pureBlack = prefs[Keys.PURE_BLACK] ?: false,
             enableFloatingBottomBar = prefs[Keys.FLOATING_BAR] ?: true,
             enableFloatingBottomBarBlur = prefs[Keys.FLOATING_BAR_BLUR] ?: true,
             keepScreenOn = prefs[Keys.KEEP_SCREEN_ON] ?: false,
@@ -82,6 +86,14 @@ class SettingsRepository @Inject constructor(
 
     suspend fun updateEnableBlur(enabled: Boolean) {
         context.dataStore.edit { it[Keys.ENABLE_BLUR] = enabled }
+    }
+
+    suspend fun updateDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.DYNAMIC_COLOR] = enabled }
+    }
+
+    suspend fun updatePureBlack(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.PURE_BLACK] = enabled }
     }
 
     suspend fun updateFloatingBottomBar(enabled: Boolean) {

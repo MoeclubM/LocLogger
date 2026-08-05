@@ -15,6 +15,8 @@ data class AppSettings(
     val colorMode: Int = 0,
     val themeColorIndex: Int = 0,
     val enableBlur: Boolean = true,
+    val dynamicColor: Boolean = false,
+    val pureBlack: Boolean = false,
     val enableFloatingBottomBar: Boolean = true,
     val enableFloatingBottomBarBlur: Boolean = true,
     val keepScreenOn: Boolean = false,
