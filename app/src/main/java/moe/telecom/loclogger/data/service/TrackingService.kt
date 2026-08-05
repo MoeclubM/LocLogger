@@ -288,6 +288,8 @@ class TrackingService : Service() {
             lastLocation = location
             return
         }
+        // 录制轨迹仅采 GPS 高精度点，避免网络兜底把轨迹拉偏
+        if (location.provider != LocationManager.GPS_PROVIDER) return
 
         // 计算距离
         var segmentDistance = 0f
@@ -367,7 +369,17 @@ class TrackingService : Service() {
 
     private fun startLocationUpdates(intervalMs: Long = MIN_TIME_MS) {
         try {
-            // 优先使用 GPS_PROVIDER，更新周期跟随设置
+            // 网络定位兜底：GPS 在室内/无卫星信号时也能快速显示实时位置
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER,
+                    intervalMs,
+                    MIN_DISTANCE_M,
+                    locationListener,
+                    Looper.getMainLooper()
+                )
+            }
+            // 优先使用 GPS_PROVIDER 高精度定位，更新周期跟随设置
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 intervalMs,
