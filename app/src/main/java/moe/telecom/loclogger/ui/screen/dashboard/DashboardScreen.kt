@@ -18,11 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -261,28 +258,10 @@ fun DashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(80.dp + LocalBottomBarInset.current))
+                Spacer(modifier = Modifier.height(LocalBottomBarInset.current + 24.dp))
             }
         }
 
-        // 开始/停止 FAB
-        FloatingActionButton(
-            onClick = { viewModel.toggleRecording() },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = LocalBottomBarInset.current + 16.dp),
-            containerColor = if (uiState.isRecording)
-                MaterialTheme.colorScheme.error
-            else
-                MaterialTheme.colorScheme.primary,
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Icon(
-                imageVector = if (uiState.isRecording) Icons.Default.Stop else Icons.Default.PlayArrow,
-                contentDescription = if (uiState.isRecording) "停止" else "开始",
-                modifier = Modifier.size(32.dp)
-            )
-        }
     }
 }
 

@@ -57,6 +57,8 @@ class TrackViewModel @Inject constructor(
         initialValue = TrackUiState()
     )
 
+    fun start() = trackingRepository.startTracking()
+
     fun pause() = trackingRepository.pauseTracking()
     fun resume() = trackingRepository.resumeTracking()
     fun stop() = trackingRepository.stopTracking()
