@@ -199,7 +199,7 @@ private fun addOverlayLayers(style: Style) {
     style.addSource(GeoJsonSource("annotation-source", FeatureCollection.fromFeatures(emptyList())))
     style.addSource(GeoJsonSource("location-source", FeatureCollection.fromFeatures(emptyList())))
 
-    style.addLayerBelow(
+    style.addLayerAbove(
         LineLayer("track-layer", "track-source").withProperties(
             PropertyFactory.lineColor("#00BCD4"),
             PropertyFactory.lineWidth(4f),
@@ -209,7 +209,7 @@ private fun addOverlayLayers(style: Style) {
         "tiles"
     )
 
-    style.addLayerBelow(
+    style.addLayerAbove(
         SymbolLayer("annotation-layer", "annotation-source").withProperties(
             PropertyFactory.iconImage("annotation-pin"),
             PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM),
@@ -224,7 +224,7 @@ private fun addOverlayLayers(style: Style) {
         "tiles"
     )
 
-    style.addLayerBelow(
+    style.addLayerAbove(
         CircleLayer("location-layer", "location-source").withProperties(
             PropertyFactory.circleColor("#1E88E5"),
             PropertyFactory.circleRadius(9f),
