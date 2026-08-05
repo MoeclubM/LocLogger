@@ -11,13 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
-import moe.telecom.loclogger.ui.LocalGlassBackdrop
-import moe.telecom.loclogger.ui.theme.LocalUiMode
-import moe.telecom.loclogger.ui.theme.UiMode
 import moe.telecom.loclogger.ui.theme.isInDarkTheme
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurColors
-import top.yukonga.miuix.kmp.blur.textureBlur
 
 @Composable
 fun GlassCard(
@@ -25,42 +19,17 @@ fun GlassCard(
     shape: Shape = RoundedCornerShape(16.dp),
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val uiMode = LocalUiMode.current
     val isDark = isInDarkTheme()
-    val layerBackdrop = if (uiMode == UiMode.Miuix) LocalGlassBackdrop.current else null
-
-    if (layerBackdrop != null) {
-        val blendColor = if (isDark) {
-            Color.Black.copy(alpha = 0.20f)
-        } else {
-            Color.White.copy(alpha = 0.45f)
-        }
-        Box(
-            modifier = modifier
-                .clip(shape)
-                .textureBlur(
-                    backdrop = layerBackdrop,
-                    shape = shape,
-                    blurRadius = 12f,
-                    colors = BlurColors(
-                        blendColors = listOf(BlendColorEntry(color = blendColor))
-                    )
-                )
-        ) {
-            Column(content = content)
-        }
+    val containerColor = if (isDark) {
+        Color.White.copy(alpha = 0.08f)
     } else {
-        val containerColor = if (isDark) {
-            Color.White.copy(alpha = 0.08f)
-        } else {
-            Color.White.copy(alpha = 0.55f)
-        }
-        Box(
-            modifier = modifier
-                .clip(shape)
-                .background(containerColor, shape)
-        ) {
-            Column(content = content)
-        }
+        Color.White.copy(alpha = 0.55f)
+    }
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(containerColor, shape)
+    ) {
+        Column(content = content)
     }
 }
