@@ -59,3 +59,4 @@ jobs:
           name: LocLogger-debug-${{ github.run_id }}
           path: app/build/outputs/apk/debug/LocLogger-debug.apk
           if-no-files-found: error
+          archive: false
