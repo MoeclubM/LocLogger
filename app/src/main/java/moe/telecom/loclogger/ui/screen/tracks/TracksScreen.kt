@@ -25,8 +25,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsBoat
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -145,6 +147,9 @@ private fun TrackCard(
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showFormatDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showTypeDialog by remember { mutableStateOf(false) }
+    var renameText by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -219,6 +224,23 @@ private fun TrackCard(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
+                    DropdownMenuItem(
+                        text = { Text("重命名") },
+                        onClick = {
+                            showMenu = false
+                            renameText = track.name
+                            showRenameDialog = true
+                        },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("设置类型") },
+                        onClick = {
+                            showMenu = false
+                            showTypeDialog = true
+                        },
+                        leadingIcon = { Icon(track.activityType.icon, contentDescription = null) }
+                    )
                     DropdownMenuItem(
                         text = { Text("导出") },
                         onClick = {
@@ -298,6 +320,61 @@ private fun TrackCard(
                 TextButton(onClick = { showFormatDialog = false }) {
                     Text("取消")
                 }
+            }
+        )
+    }
+    // 重命名对话框
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("重命名") },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    label = { Text("名称") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (renameText.isNotBlank()) {
+                        viewModel.renameTrack(track, renameText.trim())
+                    }
+                    showRenameDialog = false
+                }) { Text("保存") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) { Text("取消") }
+            }
+        )
+    }
+
+    // 活动类型选择对话框
+    if (showTypeDialog) {
+        AlertDialog(
+            onDismissRequest = { showTypeDialog = false },
+            title = { Text("设置类型") },
+            text = {
+                Column {
+                    ActivityType.entries.forEach { type ->
+                        TextButton(
+                            onClick = {
+                                viewModel.updateActivityType(track, type)
+                                showTypeDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(type.icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(type.label)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showTypeDialog = false }) { Text("取消") }
             }
         )
     }

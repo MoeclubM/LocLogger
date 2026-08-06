@@ -34,6 +34,12 @@ interface TrackDao {
     @Query("DELETE FROM tracks WHERE id = :id")
     suspend fun deleteTrackById(id: Long)
 
+    @Query("UPDATE tracks SET name = :name WHERE id = :id")
+    suspend fun renameTrack(id: Long, name: String)
+
+    @Query("UPDATE tracks SET activityType = :activityType WHERE id = :id")
+    suspend fun updateActivityType(id: Long, activityType: Int)
+
     @Query("UPDATE tracks SET isRecording = 0, isPaused = 0, endTime = :endTime, pointCount = :pointCount, totalDistance = :distance, maxSpeed = :maxSpeed, avgSpeed = :avgSpeed, maxAltitude = :maxAlt, minAltitude = :minAlt, altitudeDiff = :altDiff WHERE id = :id")
     suspend fun finishTrack(
         id: Long,

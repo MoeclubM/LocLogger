@@ -288,8 +288,8 @@ class TrackingService : Service() {
             lastLocation = location
             return
         }
-        // 录制轨迹仅采 GPS 高精度点，避免网络兜底把轨迹拉偏
-        if (location.provider != LocationManager.GPS_PROVIDER) return
+        // 接受 GPS 和网络定位点录制，室内/遮挡也有点可录；精度过滤防止网络定位拉偏轨迹
+        if (location.hasAccuracy() && location.accuracy > 50f) return
 
         // 计算距离
         var segmentDistance = 0f

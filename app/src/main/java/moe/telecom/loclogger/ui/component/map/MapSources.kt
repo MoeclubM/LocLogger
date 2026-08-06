@@ -1,5 +1,8 @@
 package moe.telecom.loclogger.ui.component.map
 
+/** 地图源坐标系：高德/Google中国瓦片用 GCJ02，OSM/Google全球用 WGS84 */
+enum class CoordinateSystem { WGS84, GCJ02 }
+
 /**
  * 地图源定义 - MapLibre raster 瓦片源
  *
@@ -12,7 +15,8 @@ data class MapSourceDef(
     val tileUrls: List<String>,
     val maxZoom: Int = 19,
     val tileSize: Int = 256,
-    val attribution: String = ""
+    val attribution: String = "",
+    val coordinateSystem: CoordinateSystem = CoordinateSystem.WGS84
 ) {
     /** 生成 MapLibre raster style JSON */
     fun styleJson(): String {
@@ -56,7 +60,8 @@ object MapSources {
             "https://mt3.google.com/vt/lyrs=m&hl=zh-CN&x={x}&y={y}&z={z}"
         ),
         maxZoom = 20,
-        attribution = "© Google"
+        attribution = "© Google",
+        coordinateSystem = CoordinateSystem.GCJ02
     )
 
     // Google 卫星
@@ -69,7 +74,8 @@ object MapSources {
             "https://mt3.google.com/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}"
         ),
         maxZoom = 20,
-        attribution = "© Google"
+        attribution = "© Google",
+        coordinateSystem = CoordinateSystem.GCJ02
     )
 
     // Google 地形
@@ -80,7 +86,8 @@ object MapSources {
             "https://mt1.google.com/vt/lyrs=p&hl=zh-CN&x={x}&y={y}&z={z}"
         ),
         maxZoom = 18,
-        attribution = "© Google"
+        attribution = "© Google",
+        coordinateSystem = CoordinateSystem.GCJ02
     )
 
     // 高德地图
@@ -93,7 +100,8 @@ object MapSources {
             "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
         ),
         maxZoom = 18,
-        attribution = "© 高德地图"
+        attribution = "© 高德地图",
+        coordinateSystem = CoordinateSystem.GCJ02
     )
 
     // 高德卫星
@@ -106,7 +114,8 @@ object MapSources {
             "https://wprd04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}"
         ),
         maxZoom = 18,
-        attribution = "© 高德地图"
+        attribution = "© 高德地图",
+        coordinateSystem = CoordinateSystem.GCJ02
     )
 
     val all = listOf(

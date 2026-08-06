@@ -27,6 +27,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +48,8 @@ fun TrackScreen(
     viewModel: TrackViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showAnnotationDialog by remember { mutableStateOf(false) }
+    var annotationText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -187,7 +195,7 @@ fun TrackScreen(
                 }
 
                 FilledIconButton(
-                    onClick = { viewModel.addAnnotation() },
+                    onClick = { showAnnotationDialog = true },
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
                     )
@@ -238,6 +246,36 @@ fun TrackScreen(
         }
 
         Spacer(modifier = Modifier.height(LocalBottomBarInset.current + 16.dp))
+    }
+
+    if (showAnnotationDialog) {
+        AlertDialog(
+            onDismissRequest = { showAnnotationDialog = false },
+            title = { Text("添加批注") },
+            text = {
+                OutlinedTextField(
+                    value = annotationText,
+                    onValueChange = { annotationText = it },
+                    label = { Text("描述") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (annotationText.isNotBlank()) {
+                        viewModel.addAnnotation(annotationText.trim())
+                    }
+                    annotationText = ""
+                    showAnnotationDialog = false
+                }) { Text("添加") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    annotationText = ""
+                    showAnnotationDialog = false
+                }) { Text("取消") }
+            }
+        )
     }
 }
 

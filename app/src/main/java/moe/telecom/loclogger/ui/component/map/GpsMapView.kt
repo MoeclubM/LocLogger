@@ -36,6 +36,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
+import moe.telecom.loclogger.util.CoordTransform
 
 /**
  * MapLibre 地图 Composable 组件
@@ -168,6 +169,7 @@ private class MapViewState {
     var map: MapLibreMap? = null
     var style: Style? = null
     var loadedSource: String? = null
+    var mapSource: String? = null
     var currentLat: Double? = null
     var currentLon: Double? = null
     var forceMove = false
@@ -177,6 +179,7 @@ private class MapViewState {
 
 /** 按地图源名加载 raster 样式；同源不重复加载 */
 private fun applySource(state: MapViewState, sourceName: String) {
+    state.mapSource = sourceName
     val map = state.map ?: return
     val def = MapSources.fromName(sourceName)
     if (state.loadedSource == def.name) return
@@ -235,12 +238,26 @@ private fun addOverlayLayers(style: Style) {
     )
 }
 
+/** WGS84 -> 地图源坐标系：GCJ02 地图需偏移，WGS84 直接用 */
+private fun toMapCoord(lat: Double, lon: Double, mapSourceName: String): Pair<Double, Double> {
+    val source = MapSources.fromName(mapSourceName)
+    return if (source.coordinateSystem == CoordinateSystem.GCJ02) {
+        CoordTransform.wgs84ToGcj02(lat, lon)
+    } else {
+        Pair(lat, lon)
+    }
+}
+
 private fun updateTrack(state: MapViewState) {
     val style = state.style ?: return
     val source = style.getSourceAs<GeoJsonSource>("track-source") ?: return
     val pts = state.trackPoints
+    val mapSource = state.mapSource ?: return
     val features = if (pts.size >= 2) {
-        val line = LineString.fromLngLats(pts.map { (lat, lon) -> Point.fromLngLat(lon, lat) })
+        val line = LineString.fromLngLats(pts.map { (lat, lon) ->
+            val (mlat, mlon) = toMapCoord(lat, lon, mapSource)
+            Point.fromLngLat(mlon, mlat)
+        })
         listOf(Feature.fromGeometry(line))
     } else {
         emptyList()
@@ -251,8 +268,10 @@ private fun updateTrack(state: MapViewState) {
 private fun updateAnnotations(state: MapViewState) {
     val style = state.style ?: return
     val source = style.getSourceAs<GeoJsonSource>("annotation-source") ?: return
+    val mapSource = state.mapSource ?: return
     val features = state.annotations.map { (lat, lon, desc) ->
-        Feature.fromGeometry(Point.fromLngLat(lon, lat)).also { it.addStringProperty("title", desc) }
+        val (mlat, mlon) = toMapCoord(lat, lon, mapSource)
+        Feature.fromGeometry(Point.fromLngLat(mlon, mlat)).also { it.addStringProperty("title", desc) }
     }
     source.setGeoJson(FeatureCollection.fromFeatures(features))
 }
@@ -260,10 +279,12 @@ private fun updateAnnotations(state: MapViewState) {
 private fun updateLocation(state: MapViewState, show: Boolean) {
     val style = state.style ?: return
     val source = style.getSourceAs<GeoJsonSource>("location-source") ?: return
+    val mapSource = state.mapSource ?: return
     val lat = state.currentLat
     val lon = state.currentLon
     val features = if (show && lat != null && lon != null) {
-        listOf(Feature.fromGeometry(Point.fromLngLat(lon, lat)))
+        val (mlat, mlon) = toMapCoord(lat, lon, mapSource)
+        listOf(Feature.fromGeometry(Point.fromLngLat(mlon, mlat)))
     } else {
         emptyList()
     }
@@ -273,7 +294,9 @@ private fun updateLocation(state: MapViewState, show: Boolean) {
 /** 跟随定位：仅在首次定位或离视野中心较远时移动相机，避免频繁动画 */
 private fun moveCamera(state: MapViewState, lat: Double, lon: Double, force: Boolean) {
     val map = state.map ?: return
-    val target = LatLng(lat, lon)
+    val mapSource = state.mapSource ?: return
+    val (mlat, mlon) = toMapCoord(lat, lon, mapSource)
+    val target = LatLng(mlat, mlon)
     val camera = map.cameraPosition
     val distToCenter = camera.target?.distanceTo(target) ?: Double.MAX_VALUE
     val needsMove = force || camera.zoom < 14.0 || distToCenter > 150.0
@@ -290,7 +313,11 @@ private fun zoomToTrack(state: MapViewState) {
     val map = state.map ?: return
     val pts = state.trackPoints
     if (pts.size < 2) return
-    val bounds = LatLngBounds.Builder().includes(pts.map { (lat, lon) -> LatLng(lat, lon) }).build()
+    val mapSource = state.mapSource ?: return
+    val bounds = LatLngBounds.Builder().includes(pts.map { (lat, lon) ->
+        val (mlat, mlon) = toMapCoord(lat, lon, mapSource)
+        LatLng(mlat, mlon)
+    }).build()
     map.getCameraForLatLngBounds(bounds, intArrayOf(48, 48, 48, 48))?.let { position ->
         map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 600)
     }

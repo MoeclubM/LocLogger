@@ -116,6 +116,8 @@ class TrackingRepository @Inject constructor(
         annotationDao.getAnnotationsForTrackSync(trackId)
     suspend fun getTrackById(id: Long): TrackEntity? = trackDao.getTrackById(id)
     suspend fun deleteTrack(track: TrackEntity) = trackDao.deleteTrack(track)
+    suspend fun renameTrack(id: Long, name: String) = trackDao.renameTrack(id, name)
+    suspend fun updateActivityType(id: Long, activityType: Int) = trackDao.updateActivityType(id, activityType)
 
     // 导出
     fun exportTrack(

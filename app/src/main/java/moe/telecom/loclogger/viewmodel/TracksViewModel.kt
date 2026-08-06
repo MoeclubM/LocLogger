@@ -46,6 +46,18 @@ class TracksViewModel @Inject constructor(
         }
     }
 
+    fun renameTrack(item: TrackItem, newName: String) {
+        viewModelScope.launch {
+            trackingRepository.renameTrack(item.id, newName)
+        }
+    }
+
+    fun updateActivityType(item: TrackItem, type: ActivityType) {
+        viewModelScope.launch {
+            trackingRepository.updateActivityType(item.id, type.ordinal)
+        }
+    }
+
     /** 导出轨迹到临时文件并返回分享 Intent */
     suspend fun shareTrack(item: TrackItem, format: String): Intent {
         val fmt = format.lowercase()
