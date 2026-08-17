@@ -121,10 +121,34 @@ jobs:
           archive: false
           if-no-files-found: error
 
-      - name: Upload release APKs
+      - name: Upload release APK (arm64-v8a)
         if: env.release_built == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: LocLogger-release-${{ github.run_id }}
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-arm64-v8a.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload release APK (armeabi-v7a)
+        if: env.release_built == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-armeabi-v7a.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload release APK (x86_64)
+        if: env.release_built == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-x86_64.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload release APK (universal)
+        if: env.release_built == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-universal.apk
+          archive: false
           if-no-files-found: error
