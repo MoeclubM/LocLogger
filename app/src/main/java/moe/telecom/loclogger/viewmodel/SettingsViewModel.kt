@@ -1,7 +1,10 @@
 package moe.telecom.loclogger.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import moe.telecom.loclogger.data.repository.Egm96Repository
+import moe.telecom.loclogger.data.repository.Egm96State
 import moe.telecom.loclogger.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,8 +15,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val egm96Repository: Egm96Repository
 ) : ViewModel() {
+
+    val egm96State: StateFlow<Egm96State> = egm96Repository.state
+
+    init {
+        egm96Repository.refreshState()
+    }
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
         .stateIn(
@@ -69,6 +79,10 @@ class SettingsViewModel @Inject constructor(
     fun updateEgm96(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.updateEgm96(enabled) }
     }
+
+    fun downloadEgm96() = egm96Repository.download()
+
+    fun importEgm96(uri: Uri) = egm96Repository.importUri(uri)
 
     fun updateGpxVersion(version: String) {
         viewModelScope.launch { settingsRepository.updateGpxVersion(version) }

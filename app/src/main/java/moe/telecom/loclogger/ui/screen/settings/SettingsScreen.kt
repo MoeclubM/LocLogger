@@ -23,12 +23,15 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,6 +55,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dagger.hilt.android.EntryPointAccessors
+import moe.telecom.loclogger.data.repository.Egm96State
 import moe.telecom.loclogger.ui.theme.keyColorOptions
 import moe.telecom.loclogger.ui.util.PermissionEntryPoint
 import moe.telecom.loclogger.ui.util.PermissionManager
@@ -180,6 +184,52 @@ fun SettingsScreen(
                 checked = settings.egm96Correction,
                 onCheckedChange = { viewModel.updateEgm96(it) }
             )
+            val egm96State by viewModel.egm96State.collectAsState()
+            val downloading = egm96State is Egm96State.Downloading || egm96State is Egm96State.Progress
+            val filePicker = rememberLauncherForActivityResult(
+                ActivityResultContracts.OpenDocument()
+            ) { uri -> uri?.let { viewModel.importEgm96(it) } }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Text(
+                    text = when (val state = egm96State) {
+                        is Egm96State.NotInstalled -> "未安装数据"
+                        is Egm96State.Downloading -> "正在下载…"
+                        is Egm96State.Progress -> "正在下载… ${state.percent}%"
+                        is Egm96State.Ready -> "已安装"
+                        is Egm96State.Error -> "错误：${state.message}"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (downloading) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        progress = { ((egm96State as? Egm96State.Progress)?.percent ?: 0) / 100f }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (egm96State is Egm96State.NotInstalled || egm96State is Egm96State.Error) {
+                        Button(onClick = { viewModel.downloadEgm96() }, enabled = !downloading) {
+                            Text("一键下载")
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = { filePicker.launch(arrayOf("application/octet-stream", "*/*")) },
+                        enabled = !downloading
+                    ) {
+                        Text("选择文件导入")
+                    }
+                }
+            }
         }
 
         // 导出设置

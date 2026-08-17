@@ -28,6 +28,8 @@ import moe.telecom.loclogger.data.local.entity.AnnotationEntity
 import moe.telecom.loclogger.data.local.entity.TrackEntity
 import moe.telecom.loclogger.data.local.entity.TrackPointEntity
 import moe.telecom.loclogger.data.repository.SettingsRepository
+import moe.telecom.loclogger.data.repository.Egm96Repository
+import moe.telecom.loclogger.util.Egm96
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +80,7 @@ class TrackingService : Service() {
     @Inject lateinit var trackPointDao: TrackPointDao
     @Inject lateinit var annotationDao: AnnotationDao
     @Inject lateinit var settingsRepository: SettingsRepository
+    @Inject lateinit var egm96Repository: Egm96Repository
 
     private val binder = LocalBinder()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -91,6 +94,7 @@ class TrackingService : Service() {
 
     private var currentTrackId: Long? = null
     private var lastLocation: Location? = null
+    private var egm96Enabled = false
     private var startTime: Long = 0L
     private var pausedDuration: Long = 0L
     private var lastPauseTime: Long = 0L
@@ -173,6 +177,8 @@ class TrackingService : Service() {
 
             acquireWakeLock()
             val settings = settingsRepository.settings.first()
+            egm96Enabled = settings.egm96Correction
+            if (egm96Enabled) egm96Repository.ensureLoaded()
             startLocationUpdates(intervalMs = settings.gpsInterval.toLong())
             startForeground(NOTIFICATION_ID, buildNotification("正在记录轨迹…"))
             startDurationUpdates()
@@ -323,6 +329,9 @@ class TrackingService : Service() {
                     latitude = location.latitude,
                     longitude = location.longitude,
                     altitude = if (location.hasAltitude()) location.altitude else null,
+                    altitudeEGM96 = if (egm96Enabled && location.hasAltitude()) {
+                        Egm96.geoidHeight(location.latitude, location.longitude)?.let { location.altitude - it }
+                    } else null,
                     speed = if (location.hasSpeed()) location.speed else null,
                     accuracy = if (location.hasAccuracy()) location.accuracy else null,
                     bearing = if (location.hasBearing()) location.bearing else null,

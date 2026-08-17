@@ -30,24 +30,16 @@ data class MapSourceDef(
  */
 object MapSources {
 
-    // OpenStreetMap 标准
+    // OpenStreetMap 标准（官方 Carto 瓦片，中文标签正常且无拼音，合并原 OSM/OSM中文）
     val OSM = MapSourceDef(
         name = "OpenStreetMap",
         tileUrls = listOf(
-            "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
-            "https://b.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
-            "https://c.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+            "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
         ),
         maxZoom = 19,
         attribution = "© OpenStreetMap contributors"
-    )
-
-    // OpenStreetMap 中文（高德风格）
-    val OSM_CN = MapSourceDef(
-        name = "OSM中文",
-        tileUrls = listOf("https://tile.openstreetmap.de/{z}/{x}/{y}.png"),
-        maxZoom = 19,
-        attribution = "© OpenStreetMap"
     )
 
     // Google 地图
@@ -64,7 +56,7 @@ object MapSources {
         coordinateSystem = CoordinateSystem.GCJ02
     )
 
-    // Google 卫星
+    // Google 卫星（影像本身为 WGS84，叠加 GPS 轨迹无需偏移）
     val GOOGLE_SATELLITE = MapSourceDef(
         name = "Google卫星",
         tileUrls = listOf(
@@ -75,7 +67,7 @@ object MapSources {
         ),
         maxZoom = 20,
         attribution = "© Google",
-        coordinateSystem = CoordinateSystem.GCJ02
+        coordinateSystem = CoordinateSystem.WGS84
     )
 
     // Google 地形
@@ -119,7 +111,7 @@ object MapSources {
     )
 
     val all = listOf(
-        OSM, OSM_CN, GOOGLE_MAP, GOOGLE_SATELLITE, GOOGLE_TERRAIN,
+        OSM, GOOGLE_MAP, GOOGLE_SATELLITE, GOOGLE_TERRAIN,
         AMAP, AMAP_SATELLITE
     )
 
