@@ -12,8 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.dynamicColorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 // CompositionLocal - 对标 SukiSU
 val LocalUiMode = staticCompositionLocalOf { UiMode.Material }
@@ -68,8 +70,23 @@ fun GpsLoggerTheme(
                 )
             }
             UiMode.Miuix -> {
+                val schemeMode = when {
+                    dynamicColor && colorMode == ColorMode.DARK -> ColorSchemeMode.MonetDark
+                    dynamicColor && colorMode == ColorMode.LIGHT -> ColorSchemeMode.MonetLight
+                    dynamicColor -> ColorSchemeMode.MonetSystem
+                    colorMode == ColorMode.DARK -> ColorSchemeMode.Dark
+                    colorMode == ColorMode.LIGHT -> ColorSchemeMode.Light
+                    else -> ColorSchemeMode.System
+                }
+                val controller = ThemeController(
+                    schemeMode,
+                    keyColor = if (dynamicColor) null else seedColor,
+                    isDark = darkMode,
+                    paletteStyle = ThemePaletteStyle.TonalSpot,
+                    colorSpec = ThemeColorSpec.Spec2025,
+                )
                 MiuixTheme(
-                    colors = if (darkMode) darkColorScheme() else lightColorScheme(),
+                    controller = controller,
                     content = {
                         MaterialTheme(
                             colorScheme = materialColorScheme,
