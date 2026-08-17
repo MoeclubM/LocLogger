@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.DropdownMenu
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import moe.telecom.loclogger.ui.LocalBottomBarInset
+import moe.telecom.loclogger.ui.component.map.FullscreenMap
 import moe.telecom.loclogger.ui.component.map.GpsMapView
 import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
@@ -55,6 +57,7 @@ fun DashboardScreen(
     var showMapSourceMenu by remember { mutableStateOf(false) }
     var followLocation by remember { mutableStateOf(true) }
     var recenterRequest by remember { mutableIntStateOf(0) }
+    var showFullscreen by remember { mutableStateOf(false) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val portrait = maxWidth <= maxHeight
@@ -70,6 +73,7 @@ fun DashboardScreen(
                     onMapSourceChange = { mapSource = it },
                     onShowMenuChange = { showMapSourceMenu = it },
                     onUserGesture = { followLocation = false },
+                    onFullscreen = { showFullscreen = true },
                     onRecenter = {
                         followLocation = true
                         recenterRequest++
@@ -92,6 +96,7 @@ fun DashboardScreen(
                     onMapSourceChange = { mapSource = it },
                     onShowMenuChange = { showMapSourceMenu = it },
                     onUserGesture = { followLocation = false },
+                    onFullscreen = { showFullscreen = true },
                     onRecenter = {
                         followLocation = true
                         recenterRequest++
@@ -101,6 +106,18 @@ fun DashboardScreen(
                 DataPanel(uiState = uiState, modifier = Modifier.weight(1f))
             }
         }
+    }
+
+    if (showFullscreen) {
+        FullscreenMap(
+            title = "地图",
+            currentLat = uiState.latitude,
+            currentLon = uiState.longitude,
+            trackPoints = emptyList(),
+            showMyLocation = true,
+            initialFollow = followLocation,
+            onClose = { showFullscreen = false }
+        )
     }
 }
 
@@ -114,6 +131,7 @@ private fun MapArea(
     onMapSourceChange: (String) -> Unit,
     onShowMenuChange: (Boolean) -> Unit,
     onUserGesture: () -> Unit,
+    onFullscreen: () -> Unit,
     onRecenter: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -129,28 +147,44 @@ private fun MapArea(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 地图源切换按钮
-        Box(modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
+        // 顶部操作：全屏 + 地图源切换
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             IconButton(
-                onClick = { onShowMenuChange(true) },
+                onClick = onFullscreen,
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
             ) {
-                Icon(Icons.Default.Layers, contentDescription = "地图源")
+                Icon(Icons.Default.Fullscreen, contentDescription = "全屏")
             }
-            DropdownMenu(
-                expanded = showMapSourceMenu,
-                onDismissRequest = { onShowMenuChange(false) }
-            ) {
-                MapSources.all.forEach { source ->
-                    DropdownMenuItem(
-                        text = { Text(source.name) },
-                        onClick = {
-                            onMapSourceChange(source.name)
-                            onShowMenuChange(false)
-                        }
-                    )
+            Box {
+                IconButton(
+                    onClick = { onShowMenuChange(true) },
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                ) {
+                    Icon(Icons.Default.Layers, contentDescription = "地图源")
+                }
+                DropdownMenu(
+                    expanded = showMapSourceMenu,
+                    onDismissRequest = { onShowMenuChange(false) }
+                ) {
+                    MapSources.all.forEach { source ->
+                        DropdownMenuItem(
+                            text = { Text(source.name) },
+                            onClick = {
+                                onMapSourceChange(source.name)
+                                onShowMenuChange(false)
+                            }
+                        )
+                    }
                 }
             }
         }

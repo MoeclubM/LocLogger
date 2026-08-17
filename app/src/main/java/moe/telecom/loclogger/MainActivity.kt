@@ -38,6 +38,7 @@ import moe.telecom.loclogger.ui.component.bottombar.SideRail
 import moe.telecom.loclogger.ui.component.bottombar.rememberMainPagerState
 import moe.telecom.loclogger.ui.screen.dashboard.DashboardScreen
 import moe.telecom.loclogger.ui.screen.settings.SettingsScreen
+import moe.telecom.loclogger.ui.screen.settings.ThemeManagerScreen
 import moe.telecom.loclogger.ui.screen.track.TrackDetailScreen
 import moe.telecom.loclogger.ui.screen.track.TrackScreen
 import moe.telecom.loclogger.ui.screen.tracks.TrackItem
@@ -104,11 +105,15 @@ class MainActivity : ComponentActivity() {
 private fun MainContent() {
     val pagerState = rememberPagerState(pageCount = { 4 })
     var selectedTrack by remember { mutableStateOf<TrackItem?>(null) }
+    var showThemeManager by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val mainPagerState = rememberMainPagerState(pagerState, coroutineScope)
 
     if (selectedTrack != null) {
         BackHandler { selectedTrack = null }
+    }
+    if (showThemeManager) {
+        BackHandler { showThemeManager = false }
     }
 
     val uiMode = LocalUiMode.current
@@ -161,7 +166,7 @@ private fun MainContent() {
                         0 -> DashboardScreen()
                         1 -> TrackScreen()
                         2 -> TracksScreen(onTrackClick = { selectedTrack = it })
-                        3 -> SettingsScreen()
+                        3 -> SettingsScreen(onOpenThemeManager = { showThemeManager = true })
                     }
                 }
 
@@ -170,6 +175,10 @@ private fun MainContent() {
                         trackItem = track,
                         onBack = { selectedTrack = null }
                     )
+                }
+
+                if (showThemeManager) {
+                    ThemeManagerScreen(onBack = { showThemeManager = false })
                 }
             }
 

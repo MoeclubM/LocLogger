@@ -61,6 +61,7 @@ fun GpsMapView(
     val context = LocalContext.current
     val state = remember { MapViewState() }
     val currentSource by rememberUpdatedState(mapSourceName)
+    val currentOnUserGesture by rememberUpdatedState(onUserGesture)
 
     val mapView = remember {
         MapView(context).apply { onCreate(null) }
@@ -76,7 +77,7 @@ fun GpsMapView(
             )
             // 用户开始拖动地图时通知外部关闭跟随，避免相机被定位更新拉回
             map.addOnMoveListener(object : MapLibreMap.OnMoveListener {
-                override fun onMoveBegin(detector: MoveGestureDetector) = onUserGesture()
+                override fun onMoveBegin(detector: MoveGestureDetector) = currentOnUserGesture()
                 override fun onMove(detector: MoveGestureDetector) = Unit
                 override fun onMoveEnd(detector: MoveGestureDetector) = Unit
             })
@@ -117,7 +118,10 @@ fun GpsMapView(
     LaunchedEffect(trackPoints) {
         state.trackPoints = trackPoints
         updateTrack(state)
-        if (!followLocation && trackPoints.size > 1) zoomToTrack(state)
+        if (!followLocation && trackPoints.size > 1) {
+            if (state.map != null && state.style != null) zoomToTrack(state)
+            else state.pendingTrackZoom = true
+        }
     }
 
     // 批注标记
@@ -175,6 +179,7 @@ private class MapViewState {
     var forceMove = false
     var trackPoints: List<Pair<Double, Double>> = emptyList()
     var annotations: List<Triple<Double, Double, String>> = emptyList()
+    var pendingTrackZoom = false
 }
 
 /** 按地图源名加载 raster 样式；同源不重复加载 */
@@ -190,6 +195,10 @@ private fun applySource(state: MapViewState, sourceName: String) {
         updateTrack(state)
         updateAnnotations(state)
         updateLocation(state, show = true)
+        if (state.pendingTrackZoom && state.trackPoints.size > 1) {
+            state.pendingTrackZoom = false
+            zoomToTrack(state)
+        }
     }
 }
 

@@ -70,27 +70,48 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease :app:bundleRelease --build-cache --stacktrace
-          apk="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
-          bundle="$(find app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' -print -quit)"
-          test -n "$apk"
-          test -n "$bundle"
-          mv "$apk" "app/build/outputs/apk/release/LocLogger-${GITHUB_REF_NAME}.apk"
-          mv "$bundle" "app/build/outputs/bundle/release/LocLogger-${GITHUB_REF_NAME}.aab"
+          VERSION="${GITHUB_REF_NAME}"
 
-      - name: Upload release APK
+          rename_apks() {
+            local build_type="$1"
+            local out_dir="app/build/outputs/apk/${build_type}"
+            if [ ! -d "$out_dir" ]; then
+              return
+            fi
+            for apk in "$out_dir"/*.apk; do
+              [ -e "$apk" ] || continue
+              base="$(basename "$apk" .apk)"
+              base="${base%-${build_type}}"
+              abi="universal"
+              case "$base" in
+                *-arm64-v8a) abi="arm64-v8a" ;;
+                *-armeabi-v7a) abi="armeabi-v7a" ;;
+                *-x86_64) abi="x86_64" ;;
+                *-universal) abi="universal" ;;
+              esac
+              mv "$apk" "${out_dir}/LocLogger-${VERSION}-${build_type}-${abi}.apk"
+            done
+          }
+
+          echo "Building signed release APK (per-ABI + universal) and AAB"
+          ./gradlew :app:assembleRelease :app:bundleRelease --build-cache --stacktrace
+          rename_apks release
+
+          bundle="$(find app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' -print -quit)"
+          test -n "$bundle"
+          mv "$bundle" "app/build/outputs/bundle/release/LocLogger-${VERSION}-release.aab"
+
+      - name: Upload release APKs
         uses: actions/upload-artifact@v7
         with:
-          name: LocLogger-release-${{ github.ref_name }}
-          path: app/build/outputs/apk/release/LocLogger-${{ github.ref_name }}.apk
+          name: LocLogger-release-apks-${{ github.ref_name }}
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
-          archive: false
 
       - name: Upload release AAB
         uses: actions/upload-artifact@v7
         with:
-          name: LocLogger-release-aab-${{ github.ref_name }}
-          path: app/build/outputs/bundle/release/LocLogger-${{ github.ref_name }}.aab
+          path: app/build/outputs/bundle/release/LocLogger-${{ github.ref_name }}-release.aab
           if-no-files-found: error
           archive: false
 
@@ -99,6 +120,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            app/build/outputs/apk/release/LocLogger-${{ github.ref_name }}.apk
-            app/build/outputs/bundle/release/LocLogger-${{ github.ref_name }}.aab
+            app/build/outputs/apk/release/LocLogger-${{ github.ref_name }}-release-*.apk
+            app/build/outputs/bundle/release/LocLogger-${{ github.ref_name }}-release.aab
           generate_release_notes: true

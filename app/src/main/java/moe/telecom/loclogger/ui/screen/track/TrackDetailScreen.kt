@@ -3,6 +3,7 @@ package moe.telecom.loclogger.ui.screen.track
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +15,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,8 +35,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -53,6 +59,7 @@ import moe.telecom.loclogger.data.local.entity.AnnotationEntity
 import moe.telecom.loclogger.data.repository.SettingsRepository
 import moe.telecom.loclogger.data.repository.TrackingRepository
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
+import moe.telecom.loclogger.ui.component.map.FullscreenMap
 import moe.telecom.loclogger.ui.component.map.GpsMapView
 import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.ui.screen.tracks.TrackItem
@@ -144,6 +151,7 @@ fun TrackDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showFullscreen by remember { mutableStateOf(false) }
 
     LaunchedEffect(trackItem.id) {
         viewModel.loadDetail(trackItem)
@@ -206,6 +214,16 @@ fun TrackDetailScreen(
                             showMyLocation = false,
                             modifier = Modifier.fillMaxSize()
                         )
+                        IconButton(
+                            onClick = { showFullscreen = true },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(12.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                        ) {
+                            Icon(Icons.Default.Fullscreen, contentDescription = "全屏")
+                        }
                     }
 
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -280,6 +298,21 @@ fun TrackDetailScreen(
                         Spacer(modifier = Modifier.size(8.dp))
                         Text("分享轨迹")
                     }
+                }
+
+                if (showFullscreen) {
+                    FullscreenMap(
+                        title = track.name.ifBlank { "轨迹地图" },
+                        currentLat = null,
+                        currentLon = null,
+                        trackPoints = detail.points.map { it.latitude to it.longitude },
+                        annotations = detail.annotations.map {
+                            Triple(it.latitude, it.longitude, it.description)
+                        },
+                        showMyLocation = false,
+                        initialFollow = false,
+                        onClose = { showFullscreen = false }
+                    )
                 }
             }
         }

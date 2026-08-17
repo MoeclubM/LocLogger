@@ -1,6 +1,8 @@
 package moe.telecom.loclogger.ui.screen.track
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,9 +20,11 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,6 +38,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,6 +46,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
+import moe.telecom.loclogger.ui.component.map.FullscreenMap
+import moe.telecom.loclogger.ui.component.map.GpsMapView
 import moe.telecom.loclogger.viewmodel.TrackViewModel
 
 @Composable
@@ -50,6 +57,8 @@ fun TrackScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showAnnotationDialog by remember { mutableStateOf(false) }
     var annotationText by remember { mutableStateOf("") }
+    val trackPoints by viewModel.trackPoints.collectAsState()
+    var showFullscreen by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -63,6 +72,34 @@ fun TrackScreen(
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
+
+        // 实时地图卡片：当前轨迹线 + 实时定位点
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp)
+                .clip(RoundedCornerShape(20.dp))
+        ) {
+            GpsMapView(
+                currentLat = uiState.latitude,
+                currentLon = uiState.longitude,
+                trackPoints = trackPoints,
+                mapSourceName = "高德地图",
+                followLocation = true,
+                showMyLocation = true,
+                modifier = Modifier.fillMaxSize()
+            )
+            IconButton(
+                onClick = { showFullscreen = true },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+            ) {
+                Icon(Icons.Default.Fullscreen, contentDescription = "全屏")
+            }
+        }
 
         if (uiState.isRecording) {
             // 轨迹名称
@@ -275,6 +312,16 @@ fun TrackScreen(
                     showAnnotationDialog = false
                 }) { Text("取消") }
             }
+        )
+    }
+
+    if (showFullscreen) {
+        FullscreenMap(
+            title = "录制地图",
+            currentLat = uiState.latitude,
+            currentLon = uiState.longitude,
+            trackPoints = trackPoints,
+            onClose = { showFullscreen = false }
         )
     }
 }

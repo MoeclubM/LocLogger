@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import moe.telecom.loclogger.data.repository.TrackingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -16,6 +19,8 @@ data class TrackUiState(
     val isPaused: Boolean = false,
     val isLocked: Boolean = false,
     val trackName: String = "",
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val pointCount: Int = 0,
     val annotationCount: Int = 0,
     val duration: Long = 0L,
@@ -42,6 +47,8 @@ class TrackViewModel @Inject constructor(
             isPaused = state.isPaused,
             isLocked = locked,
             trackName = state.trackName,
+            latitude = state.latitude,
+            longitude = state.longitude,
             pointCount = state.pointCount,
             annotationCount = state.annotationCount,
             duration = state.duration,
@@ -56,6 +63,24 @@ class TrackViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = TrackUiState()
     )
+
+    /** 当前录制轨迹的实时路点，仅录制时按 pointCount 变化增量读取 */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val trackPoints: StateFlow<List<Pair<Double, Double>>> = trackingRepository.trackingState
+        .distinctUntilChangedBy { it.pointCount }
+        .mapLatest { state ->
+            val id = state.currentTrackId
+            if (state.isRecording && id != null) {
+                trackingRepository.getPointsForTrackSync(id).map { it.latitude to it.longitude }
+            } else {
+                emptyList()
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     fun start() = trackingRepository.startTracking()
 

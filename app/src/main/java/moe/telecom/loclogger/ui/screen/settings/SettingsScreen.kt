@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.DisplaySettings
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FiberManualRecord
@@ -51,9 +52,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dagger.hilt.android.EntryPointAccessors
-import moe.telecom.loclogger.ui.theme.ColorMode
-import moe.telecom.loclogger.ui.theme.UiMode
-import moe.telecom.loclogger.ui.theme.isInDarkTheme
 import moe.telecom.loclogger.ui.theme.keyColorOptions
 import moe.telecom.loclogger.ui.util.PermissionEntryPoint
 import moe.telecom.loclogger.ui.util.PermissionManager
@@ -64,6 +62,7 @@ import moe.telecom.loclogger.viewmodel.SettingsViewModel
 
 @Composable
 fun SettingsScreen(
+    onOpenThemeManager: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
@@ -103,58 +102,44 @@ fun SettingsScreen(
                 checked = settings.keepScreenOn,
                 onCheckedChange = { viewModel.updateKeepScreenOn(it) }
             )
-            SettingsDropdownItem(
-                title = "当前主题",
-                subtitle = UiMode.fromInt(settings.uiMode).displayName,
-                options = UiMode.entries.map { it.displayName },
-                selectedIndex = UiMode.fromInt(settings.uiMode).ordinal,
-                onSelected = { viewModel.updateUiMode(it) }
-            )
-            SettingsDropdownItem(
-                title = "颜色模式",
-                subtitle = ColorMode.fromInt(settings.colorMode).displayName,
-                options = ColorMode.entries.map { it.displayName },
-                selectedIndex = settings.colorMode,
-                onSelected = { viewModel.updateColorMode(it) }
-            )
-            ColorPickerItem(
-                title = "主题色",
-                selectedIndex = settings.themeColorIndex,
-                onSelected = { viewModel.updateThemeColor(it) }
-            )
-            SettingsSwitchItem(
-                title = "模糊效果",
-                subtitle = "界面毛玻璃/透镜模糊",
-                checked = settings.enableBlur,
-                onCheckedChange = { viewModel.updateEnableBlur(it) }
-            )
-            SettingsSwitchItem(
-                title = "动态取色 (Material You)",
-                subtitle = "跟随系统壁纸自动取色",
-                checked = settings.dynamicColor,
-                onCheckedChange = { viewModel.updateDynamicColor(it) }
-            )
-            if (isInDarkTheme()) {
-                SettingsSwitchItem(
-                    title = "纯黑模式 (AMOLED)",
-                    subtitle = "深色下使用纯黑背景",
-                    checked = settings.pureBlack,
-                    onCheckedChange = { viewModel.updatePureBlack(it) }
-                )
-            }
-            SettingsSwitchItem(
-                title = "Liquid Glass 底栏",
-                subtitle = "浮动式毛玻璃导航栏",
-                checked = settings.enableFloatingBottomBar,
-                onCheckedChange = { viewModel.updateFloatingBottomBar(it) }
-            )
-            if (settings.enableFloatingBottomBar) {
-                SettingsSwitchItem(
-                    title = "底栏模糊效果",
-                    subtitle = "开启毛玻璃/透镜折射",
-                    checked = settings.enableFloatingBottomBarBlur,
-                    onCheckedChange = { viewModel.updateFloatingBottomBarBlur(it) }
-                )
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenThemeManager() }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp)
+                    ) {
+                        Text(
+                            text = "主题管理器",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "主题样式、颜色模式、底栏等",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -253,7 +238,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsSection(
+internal fun SettingsSection(
     title: String,
     icon: ImageVector,
     content: @Composable ColumnScope.() -> Unit
@@ -290,7 +275,7 @@ private fun SettingsSection(
 }
 
 @Composable
-private fun SettingsSwitchItem(
+internal fun SettingsSwitchItem(
     title: String,
     subtitle: String,
     checked: Boolean,
@@ -319,7 +304,7 @@ private fun SettingsSwitchItem(
 }
 
 @Composable
-private fun SettingsDropdownItem(
+internal fun SettingsDropdownItem(
     title: String,
     subtitle: String,
     options: List<String>,
@@ -369,7 +354,7 @@ private fun SettingsDropdownItem(
 }
 
 @Composable
-private fun ColorPickerItem(
+internal fun ColorPickerItem(
     title: String,
     selectedIndex: Int,
     onSelected: (Int) -> Unit

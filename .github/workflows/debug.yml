@@ -46,17 +46,60 @@ jobs:
         with:
           packages: 'platforms;android-37.0 build-tools;36.0.0'
 
-      - name: Build debug APK
+      - name: Build debug and optional release APKs
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --build-cache --stacktrace
-          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/LocLogger-debug.apk
+          VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 1.0.0)"
 
-      - name: Upload debug APK
+          rename_apks() {
+            local build_type="$1"
+            local out_dir="app/build/outputs/apk/${build_type}"
+            if [ ! -d "$out_dir" ]; then
+              return
+            fi
+            for apk in "$out_dir"/*.apk; do
+              [ -e "$apk" ] || continue
+              base="$(basename "$apk" .apk)"
+              base="${base%-${build_type}}"
+              abi="universal"
+              case "$base" in
+                *-arm64-v8a) abi="arm64-v8a" ;;
+                *-armeabi-v7a) abi="armeabi-v7a" ;;
+                *-x86_64) abi="x86_64" ;;
+                *-universal) abi="universal" ;;
+              esac
+              mv "$apk" "${out_dir}/LocLogger-${VERSION}-${build_type}-${abi}.apk"
+            done
+          }
+
+          echo "Building debug APK (per-ABI + universal)"
+          ./gradlew :app:assembleDebug --build-cache --stacktrace
+          rename_apks debug
+
+          if [ -n "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_STORE_PASSWORD" ] && \
+             [ -n "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_ALIAS" ] && \
+             [ -n "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_PASSWORD" ]; then
+            echo "Release signing secrets present; building release APK too"
+            ./gradlew :app:assembleRelease --build-cache --stacktrace
+            rename_apks release
+            echo "release_built=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::LOCLOGGER_RELEASE_* signing secrets missing; skipping release build"
+            echo "release_built=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Upload debug APKs
         uses: actions/upload-artifact@v7
         with:
           name: LocLogger-debug-${{ github.run_id }}
-          path: app/build/outputs/apk/debug/LocLogger-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-          archive: false
+
+      - name: Upload release APKs
+        if: env.release_built == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: LocLogger-release-${{ github.run_id }}
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
