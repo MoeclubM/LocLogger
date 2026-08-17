@@ -53,6 +53,8 @@ jobs:
           BUILD_TIME="$(date -u +%Y%m%d-%H%M%S)"
           VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 1.0.0)"
           VERSION="${VERSION#v}"
+          echo "BUILD_TIME=${BUILD_TIME}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
 
           rename_apks() {
             local build_type="$1"
@@ -91,11 +93,32 @@ jobs:
             echo "release_built=false" >> "$GITHUB_ENV"
           fi
 
-      - name: Upload debug APKs
+      - name: Upload debug APK (arm64-v8a)
         uses: actions/upload-artifact@v7
         with:
-          name: LocLogger-debug-${{ github.run_id }}
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-debug-arm64-v8a.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload debug APK (armeabi-v7a)
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/debug/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-debug-armeabi-v7a.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload debug APK (x86_64)
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/debug/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-debug-x86_64.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload debug APK (universal)
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/debug/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-debug-universal.apk
+          archive: false
           if-no-files-found: error
 
       - name: Upload release APKs

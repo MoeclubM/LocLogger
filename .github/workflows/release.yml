@@ -73,6 +73,7 @@ jobs:
           BUILD_TIME="$(date -u +%Y%m%d-%H%M%S)"
           VERSION="${GITHUB_REF_NAME#v}"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "BUILD_TIME=${BUILD_TIME}" >> "$GITHUB_ENV"
 
           rename_apks() {
             local build_type="$1"
@@ -103,11 +104,32 @@ jobs:
           test -n "$bundle"
           mv "$bundle" "app/build/outputs/bundle/release/LocLogger-${VERSION}-${BUILD_TIME}-release.aab"
 
-      - name: Upload release APKs
+      - name: Upload release APK (arm64-v8a)
         uses: actions/upload-artifact@v7
         with:
-          name: LocLogger-release-apks-${{ github.ref_name }}
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-arm64-v8a.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload release APK (armeabi-v7a)
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-armeabi-v7a.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload release APK (x86_64)
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-x86_64.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload release APK (universal)
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/release/LocLogger-${{ env.VERSION }}-${{ env.BUILD_TIME }}-release-universal.apk
+          archive: false
           if-no-files-found: error
 
       - name: Upload release AAB
