@@ -155,11 +155,13 @@ private fun MainContent() {
             val screenHeightDp = configuration.screenHeightDp.toFloat()
             val showSplitPane = screenWidthDp >= 840f || (screenWidthDp >= 600f && screenHeightDp / screenWidthDp < 1.2f)
             val useNavigationRail = showSplitPane && !(isMiuix && enableFloatingBottomBar)
+            // 子页面（查看记录/主题管理器）打开时隐藏导航栏，防止误切页面
+            val showSystemNav = selectedTrack == null && !showThemeManager
 
             val contentArea: @Composable () -> Unit = {
                 HorizontalPager(
                     state = pagerState,
-                    userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null,
+                    userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null && !showThemeManager,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     when (page) {
@@ -184,9 +186,11 @@ private fun MainContent() {
 
             if (useNavigationRail) {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    SideRail(
-                        modifier = Modifier.align(Alignment.CenterVertically)
-                    )
+                    if (showSystemNav) {
+                        SideRail(
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -221,12 +225,14 @@ private fun MainContent() {
                             contentArea()
                         }
                     }
-                    // 底部栏覆盖在内容之上（不占内边距），内容延伸到其后方供毛玻璃采样
-                    BottomBar(
-                        blurBackdrop = blurBackdrop,
-                        backdrop = backdrop,
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
+                    // 底部栏覆盖在内容之上（不占内边距），内容延伸到其后方供毛玻璃采样；子页面打开时隐藏防误切
+                    if (showSystemNav) {
+                        BottomBar(
+                            blurBackdrop = blurBackdrop,
+                            backdrop = backdrop,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
                 }
             }
         }
