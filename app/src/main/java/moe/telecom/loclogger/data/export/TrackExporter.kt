@@ -8,6 +8,7 @@ import moe.telecom.loclogger.data.local.entity.TrackPointEntity
 import java.io.File
 import java.io.OutputStream
 import java.io.OutputStreamWriter
+import java.io.Writer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -100,52 +101,60 @@ object TrackExporter {
         points: List<TrackPointEntity>,
         annotations: List<AnnotationEntity>
     ) {
-        val writer = OutputStreamWriter(out, Charsets.UTF_8)
-        writer.use { w ->
-            w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-            w.write("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
-            w.write("<Document>\n")
-            w.write("  <name>${escapeXml(track.name)}</name>\n")
-
-            // 样式
-            w.write("  <Style id=\"trackLine\">\n")
-            w.write("    <LineStyle><color>ffD4BC00</color><width>4</width></LineStyle>\n")
-            w.write("  </Style>\n")
-            w.write("  <Style id=\"annotationPoint\">\n")
-            w.write("    <IconStyle><scale>1.0</scale></IconStyle>\n")
-            w.write("  </Style>\n")
-
-            // 轨迹线
-            w.write("  <Placemark>\n")
-            w.write("    <name>${escapeXml(track.name)}</name>\n")
-            w.write("    <styleUrl>#trackLine</styleUrl>\n")
-            w.write("    <LineString>\n")
-            w.write("      <tessellate>1</tessellate>\n")
-            w.write("      <altitudeMode>clampToGround</altitudeMode>\n")
-            w.write("      <coordinates>\n")
-            points.forEach { pt ->
-                w.write("        ${pt.longitude},${pt.latitude}")
-                if (pt.altitude != null) w.write(",${pt.altitude}")
-                w.write("\n")
-            }
-            w.write("      </coordinates>\n")
-            w.write("    </LineString>\n")
-            w.write("  </Placemark>\n")
-
-            // 批注点
-            annotations.forEach { ann ->
-                w.write("  <Placemark>\n")
-                w.write("    <name>${escapeXml(ann.description)}</name>\n")
-                w.write("    <styleUrl>#annotationPoint</styleUrl>\n")
-                w.write("    <Point>\n")
-                w.write("      <coordinates>${ann.longitude},${ann.latitude}</coordinates>\n")
-                w.write("    </Point>\n")
-                w.write("  </Placemark>\n")
-            }
-
-            w.write("</Document>\n")
-            w.write("</kml>\n")
+        OutputStreamWriter(out, Charsets.UTF_8).use { w ->
+            writeKml(w, track, points, annotations)
         }
+    }
+
+    private fun writeKml(
+        w: Writer,
+        track: TrackEntity,
+        points: List<TrackPointEntity>,
+        annotations: List<AnnotationEntity>
+    ) {
+        w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+        w.write("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
+        w.write("<Document>\n")
+        w.write("  <name>${escapeXml(track.name)}</name>\n")
+
+        // 样式
+        w.write("  <Style id=\"trackLine\">\n")
+        w.write("    <LineStyle><color>ffD4BC00</color><width>4</width></LineStyle>\n")
+        w.write("  </Style>\n")
+        w.write("  <Style id=\"annotationPoint\">\n")
+        w.write("    <IconStyle><scale>1.0</scale></IconStyle>\n")
+        w.write("  </Style>\n")
+
+        // 轨迹线
+        w.write("  <Placemark>\n")
+        w.write("    <name>${escapeXml(track.name)}</name>\n")
+        w.write("    <styleUrl>#trackLine</styleUrl>\n")
+        w.write("    <LineString>\n")
+        w.write("      <tessellate>1</tessellate>\n")
+        w.write("      <altitudeMode>clampToGround</altitudeMode>\n")
+        w.write("      <coordinates>\n")
+        points.forEach { pt ->
+            w.write("        ${pt.longitude},${pt.latitude}")
+            if (pt.altitude != null) w.write(",${pt.altitude}")
+            w.write("\n")
+        }
+        w.write("      </coordinates>\n")
+        w.write("    </LineString>\n")
+        w.write("  </Placemark>\n")
+
+        // 批注点
+        annotations.forEach { ann ->
+            w.write("  <Placemark>\n")
+            w.write("    <name>${escapeXml(ann.description)}</name>\n")
+            w.write("    <styleUrl>#annotationPoint</styleUrl>\n")
+            w.write("    <Point>\n")
+            w.write("      <coordinates>${ann.longitude},${ann.latitude}</coordinates>\n")
+            w.write("    </Point>\n")
+            w.write("  </Placemark>\n")
+        }
+
+        w.write("</Document>\n")
+        w.write("</kml>\n")
     }
 
     // ==================== KMZ 导出（KML + ZIP） ====================
@@ -159,7 +168,9 @@ object TrackExporter {
         ZipOutputStream(out.buffered()).use { zip ->
             // KML 文件
             zip.putNextEntry(ZipEntry("doc.kml"))
-            exportKml(zip, track, points, annotations)
+            val writer = OutputStreamWriter(zip, Charsets.UTF_8)
+            writeKml(writer, track, points, annotations)
+            writer.flush()
             zip.closeEntry()
         }
     }

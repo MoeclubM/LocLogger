@@ -40,7 +40,7 @@ interface TrackDao {
     @Query("UPDATE tracks SET activityType = :activityType WHERE id = :id")
     suspend fun updateActivityType(id: Long, activityType: Int)
 
-    @Query("UPDATE tracks SET isRecording = 0, isPaused = 0, endTime = :endTime, pointCount = :pointCount, totalDistance = :distance, maxSpeed = :maxSpeed, avgSpeed = :avgSpeed, maxAltitude = :maxAlt, minAltitude = :minAlt, altitudeDiff = :altDiff WHERE id = :id")
+    @Query("UPDATE tracks SET isRecording = 0, isPaused = 0, endTime = :endTime, pointCount = :pointCount, totalDistance = :distance, maxSpeed = :maxSpeed, avgSpeed = :avgSpeed, maxAltitude = :maxAlt, minAltitude = :minAlt, altitudeDiff = :altDiff, annotationCount = :annotationCount WHERE id = :id")
     suspend fun finishTrack(
         id: Long,
         endTime: Long,
@@ -50,6 +50,7 @@ interface TrackDao {
         avgSpeed: Float,
         maxAlt: Double?,
         minAlt: Double?,
-        altDiff: Double
+        altDiff: Double,
+        annotationCount: Int
     )
 }

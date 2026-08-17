@@ -36,7 +36,6 @@ LocLogger 是一款开源的 Android GPS 轨迹记录应用，基于 Kotlin 与 
 | `app/src/main/java/moe/telecom/loclogger/` | 应用源码 |
 | `.../data/` | 本地数据库（Room）、仓库、后台服务与轨迹导出 |
 | `.../di/` | Hilt 依赖注入模块 |
-| `.../domain/` | 领域模型与用例 |
 | `.../ui/` | Compose UI（页面、组件、主题、权限） |
 | `.../viewmodel/` | ViewModel 层 |
 | `gradle/` | Gradle Wrapper 与版本目录（`libs.versions.toml`） |
@@ -76,4 +75,4 @@ LOCLOGGER_RELEASE_KEY_PASSWORD      # 签名 key 密码
 
 ## 开源许可
 
-本项目暂未添加 LICENSE 文件。
+本项目采用 MIT 许可证，详见根目录 `LICENSE` 文件。

@@ -45,10 +45,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import moe.telecom.loclogger.data.local.entity.AnnotationEntity
+import moe.telecom.loclogger.data.repository.SettingsRepository
 import moe.telecom.loclogger.data.repository.TrackingRepository
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.ui.component.map.GpsMapView
@@ -70,7 +72,8 @@ data class TrackDetailUiState(
 @HiltViewModel
 class TrackDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val trackingRepository: TrackingRepository
+    private val trackingRepository: TrackingRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TrackDetailUiState())
@@ -105,9 +108,10 @@ class TrackDetailViewModel @Inject constructor(
 
                 val exportDir = File(context.filesDir, "exports").apply { mkdirs() }
                 val fileName = trackingRepository.getExportFileName(track, fmt)
+                val gpxVersion = settingsRepository.settings.first().gpxVersion
                 val file = File(exportDir, fileName)
                 file.outputStream().use { out ->
-                    trackingRepository.exportTrack(out, track, points, annotations, fmt)
+                    trackingRepository.exportTrack(out, track, points, annotations, fmt, gpxVersion)
                 }
 
                 val uri = FileProvider.getUriForFile(

@@ -215,7 +215,8 @@ class TrackingService : Service() {
                 avgSpeed = avgSpeed,
                 maxAlt = maxAlt,
                 minAlt = minAlt,
-                altDiff = altDiff
+                altDiff = altDiff,
+                annotationCount = _trackingState.value.annotationCount
             )
 
             releaseWakeLock()

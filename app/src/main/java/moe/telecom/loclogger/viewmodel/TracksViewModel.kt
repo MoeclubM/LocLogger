@@ -6,6 +6,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import moe.telecom.loclogger.data.local.entity.TrackEntity
+import moe.telecom.loclogger.data.repository.SettingsRepository
 import moe.telecom.loclogger.data.repository.TrackingRepository
 import moe.telecom.loclogger.ui.screen.tracks.ActivityType
 import moe.telecom.loclogger.ui.screen.tracks.TrackItem
@@ -13,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -25,7 +27,8 @@ import javax.inject.Inject
 @HiltViewModel
 class TracksViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val trackingRepository: TrackingRepository
+    private val trackingRepository: TrackingRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val dateFormat = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
@@ -68,9 +71,10 @@ class TracksViewModel @Inject constructor(
 
         val exportDir = File(context.filesDir, "exports").apply { mkdirs() }
         val fileName = trackingRepository.getExportFileName(track, fmt)
+        val gpxVersion = settingsRepository.settings.first().gpxVersion
         val file = File(exportDir, fileName)
         file.outputStream().use { out ->
-            trackingRepository.exportTrack(out, track, points, annotations, fmt)
+            trackingRepository.exportTrack(out, track, points, annotations, fmt, gpxVersion)
         }
 
         val uri = FileProvider.getUriForFile(

@@ -3,6 +3,7 @@ package moe.telecom.loclogger
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -105,6 +106,10 @@ private fun MainContent() {
     var selectedTrack by remember { mutableStateOf<TrackItem?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val mainPagerState = rememberMainPagerState(pagerState, coroutineScope)
+
+    if (selectedTrack != null) {
+        BackHandler { selectedTrack = null }
+    }
 
     val uiMode = LocalUiMode.current
     val isMiuix = uiMode == UiMode.Miuix
