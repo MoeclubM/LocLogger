@@ -57,6 +57,7 @@ import moe.telecom.loclogger.ui.util.PermissionEntryPoint
 import moe.telecom.loclogger.ui.util.PermissionManager
 import moe.telecom.loclogger.ui.util.PermissionStatusCard
 import moe.telecom.loclogger.ui.LocalBottomBarInset
+import moe.telecom.loclogger.BuildConfig
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.viewmodel.SettingsViewModel
 
@@ -229,7 +230,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp + LocalBottomBarInset.current))
 
         Text(
-            text = "LocLogger v1.0.0",
+            text = "LocLogger v${BuildConfig.VERSION_NAME}",
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant

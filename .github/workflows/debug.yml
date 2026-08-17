@@ -50,7 +50,9 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
+          BUILD_TIME="$(date -u +%Y%m%d-%H%M%S)"
           VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 1.0.0)"
+          VERSION="${VERSION#v}"
 
           rename_apks() {
             local build_type="$1"
@@ -69,19 +71,19 @@ jobs:
                 *-x86_64) abi="x86_64" ;;
                 *-universal) abi="universal" ;;
               esac
-              mv "$apk" "${out_dir}/LocLogger-${VERSION}-${build_type}-${abi}.apk"
+              mv "$apk" "${out_dir}/LocLogger-${VERSION}-${BUILD_TIME}-${build_type}-${abi}.apk"
             done
           }
 
           echo "Building debug APK (per-ABI + universal)"
-          ./gradlew :app:assembleDebug --build-cache --stacktrace
+          ./gradlew :app:assembleDebug -PversionName="$VERSION" --build-cache --stacktrace
           rename_apks debug
 
           if [ -n "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_STORE_PASSWORD" ] && \
              [ -n "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_ALIAS" ] && \
              [ -n "$ORG_GRADLE_PROJECT_LOCLOGGER_RELEASE_KEY_PASSWORD" ]; then
             echo "Release signing secrets present; building release APK too"
-            ./gradlew :app:assembleRelease --build-cache --stacktrace
+            ./gradlew :app:assembleRelease -PversionName="$VERSION" --build-cache --stacktrace
             rename_apks release
             echo "release_built=true" >> "$GITHUB_ENV"
           else
