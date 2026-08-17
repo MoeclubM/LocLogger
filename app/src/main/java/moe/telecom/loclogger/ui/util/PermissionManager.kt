@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
@@ -23,18 +22,11 @@ import javax.inject.Singleton
 class PermissionManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    // 基础权限（前台定位必须同时包含 FINE + COARSE，Android 12+ 要求）
-    val requiredPermissions = buildList {
-        add(Manifest.permission.ACCESS_FINE_LOCATION)
-        add(Manifest.permission.ACCESS_COARSE_LOCATION)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
-
-    // Android 10+ 后台定位
-    val backgroundLocationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-        Manifest.permission.ACCESS_BACKGROUND_LOCATION else null
+    val requiredPermissions = listOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.POST_NOTIFICATIONS
+    )
 
     fun hasFineLocation(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -45,15 +37,14 @@ class PermissionManager @Inject constructor(
             PackageManager.PERMISSION_GRANTED
 
     fun hasBackgroundLocation(): Boolean =
-        backgroundLocationPermission?.let {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        } ?: true
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
 
     fun hasNotificationPermission(): Boolean =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-        } else true
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
 
     fun hasForegroundLocation(): Boolean = hasFineLocation() && hasCoarseLocation()
 
@@ -67,9 +58,6 @@ class PermissionManager @Inject constructor(
         return pm.isIgnoringBatteryOptimizations(context.packageName)
     }
 
-    /**
-     * 跳转到应用详情设置页
-     */
     fun openAppSettings(activity: Activity) {
         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.fromParts("package", activity.packageName, null)
@@ -78,42 +66,22 @@ class PermissionManager @Inject constructor(
         activity.startActivity(intent)
     }
 
-    /**
-     * 跳转到位置权限设置
-     */
-    fun openLocationSettings(activity: Activity) {
-        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS).apply {
+    fun requestIgnoreBatteryOptimizations(activity: Activity) {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${activity.packageName}")
+            }
+            activity.startActivity(intent)
+        } catch (_: Exception) {
+            openBatteryOptimizationSettings(activity)
+        }
+    }
+
+    fun openBatteryOptimizationSettings(activity: Activity) {
+        val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         activity.startActivity(intent)
-    }
-
-    /**
-     * 请求忽略电池优化
-     */
-    fun requestIgnoreBatteryOptimizations(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            try {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:${activity.packageName}")
-                }
-                activity.startActivity(intent)
-            } catch (_: Exception) {
-                openBatteryOptimizationSettings(activity)
-            }
-        }
-    }
-
-    /**
-     * 跳转到电池优化设置
-     */
-    fun openBatteryOptimizationSettings(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            activity.startActivity(intent)
-        }
     }
 
     /**
@@ -122,7 +90,6 @@ class PermissionManager @Inject constructor(
      */
     fun openAutoStartSettings(activity: Activity) {
         val intents = listOf(
-            // 小米/红米 - MIUI/HyperOS
             Intent().setComponent(ComponentName(
                 "com.miui.securitycenter",
                 "com.miui.permcenter.autostart.AutoStartManagementActivity"
@@ -131,7 +98,6 @@ class PermissionManager @Inject constructor(
                 "com.miui.securitycenter",
                 "com.miui.permcenter.autostart.AutoStartAlertActivity"
             )),
-            // 华为/荣耀
             Intent().setComponent(ComponentName(
                 "com.huawei.systemmanager",
                 "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
@@ -140,7 +106,6 @@ class PermissionManager @Inject constructor(
                 "com.huawei.systemmanager",
                 "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity"
             )),
-            // OPPO/一加/realme - ColorOS
             Intent().setComponent(ComponentName(
                 "com.coloros.safecenter",
                 "com.coloros.safecenter.permission.startup.StartupAppListActivity"
@@ -149,7 +114,6 @@ class PermissionManager @Inject constructor(
                 "com.oplus.safecenter",
                 "com.oplus.safecenter.permission.startup.StartupAppListActivity"
             )),
-            // vivo - OriginOS/FuntouchOS
             Intent().setComponent(ComponentName(
                 "com.vivo.permissionmanager",
                 "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
@@ -158,7 +122,6 @@ class PermissionManager @Inject constructor(
                 "com.iqoo.secure",
                 "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"
             )),
-            // 三星
             Intent().setComponent(ComponentName(
                 "com.samsung.android.lool",
                 "com.samsung.android.sm.ui.battery.BatteryActivity"
@@ -167,12 +130,10 @@ class PermissionManager @Inject constructor(
                 "com.samsung.android.sm",
                 "com.samsung.android.sm.ui.ram.AutoRunActivity"
             )),
-            // 魅族 - Flyme
             Intent().setComponent(ComponentName(
                 "com.meizu.safe",
                 "com.meizu.safe.permission.SmartBGActivity"
             )),
-            // 联想/摩托罗拉
             Intent().setComponent(ComponentName(
                 "com.lenovo.security",
                 "com.lenovo.security.purebackground.PureBackgroundActivity"
@@ -188,34 +149,6 @@ class PermissionManager @Inject constructor(
             } catch (_: Exception) { /* 继续尝试下一个 */ }
         }
 
-        // 都找不到就跳应用详情
         openAppSettings(activity)
-    }
-
-    /**
-     * 跳转到通知设置
-     */
-    fun openNotificationSettings(activity: Activity) {
-        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
-            }
-        } else {
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", activity.packageName, null)
-            }
-        }.apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        activity.startActivity(intent)
-    }
-
-    companion object {
-        const val REQUEST_FINE_LOCATION = 1001
-        const val REQUEST_BACKGROUND_LOCATION = 1002
-        const val REQUEST_NOTIFICATIONS = 1003
-        const val REQUEST_APP_SETTINGS = 1004
-        const val REQUEST_BATTERY_OPTIMIZATION = 1005
-        const val REQUEST_AUTO_START = 1006
     }
 }

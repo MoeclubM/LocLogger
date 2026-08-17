@@ -90,14 +90,6 @@ class TracksViewModel @Inject constructor(
         }
     }
 
-    /** 获取轨迹详情数据 */
-    suspend fun getTrackDetail(item: TrackItem): TrackDetail? {
-        val track = trackingRepository.getTrackById(item.id) ?: return null
-        val points = trackingRepository.getPointsForTrackSync(item.id)
-        val annotations = trackingRepository.getAnnotationsForTrackSync(item.id)
-        return TrackDetail(track, points, annotations)
-    }
-
     private fun TrackEntity.toTrackItem(): TrackItem {
         val durationMs = (endTime ?: System.currentTimeMillis()) - startTime
         val activityType = ActivityType.entries.getOrElse(activityType) { ActivityType.WALK }

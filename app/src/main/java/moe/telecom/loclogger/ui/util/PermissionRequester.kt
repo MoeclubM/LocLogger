@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,10 +52,8 @@ private data class SettingsPrompt(val reason: String, val blocking: Boolean)
  *
  * 处理流程：
  * 1. 已授权 -> 回调 onPermissionResult(true)
- * 2. 前台定位未授权 -> 同时请求 FINE + COARSE（Android 12+ 官方要求，单独请求 FINE 会被忽略）
- * 3. 后台定位：
- *    - Android 11+ 系统弹窗不再提供"始终允许"，引导去系统设置开启（不阻塞主流程）
- *    - Android 10 及以下直接请求（系统弹窗含"始终允许"）
+ * 2. 前台定位未授权 -> 同时请求 FINE + COARSE
+ * 3. 后台定位：minSdk 33，系统弹窗不再提供「始终允许」，引导去系统设置（不阻塞主流程）
  * 4. 通知权限 -> 请求
  */
 @Composable
@@ -83,38 +80,19 @@ fun PermissionRequester(
     }
 
     fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !permissionManager.hasNotificationPermission()
-        ) {
+        if (!permissionManager.hasNotificationPermission()) {
             notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             checkFinalResult()
         }
     }
 
-    // 后台定位请求（仅 Android 10 及以下使用，系统弹窗含"始终允许"）
-    val backgroundLocationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {
-        requestNotificationPermission()
-    }
-
-    // 后台定位：Android 11+ 只能去系统设置开启，Android 10 及以下直接请求
     fun requestBackgroundLocation() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            showSettingsDialog = SettingsPrompt(
-                "Android 11 及以上系统不再提供「始终允许」选项。\n\n" +
-                    "请到系统设置中为 LocLogger 开启「允许所有时间」定位权限，" +
-                    "以便息屏或切换到其他应用后仍能持续记录轨迹。",
-                blocking = false
-            )
-        } else if (activity != null &&
-            activity.shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        ) {
-            showRationaleDialog = Manifest.permission.ACCESS_BACKGROUND_LOCATION
-        } else {
-            backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        }
+        showSettingsDialog = SettingsPrompt(
+            "请到系统设置中为 LocLogger 开启「允许所有时间」定位权限，" +
+                "以便息屏或切换到其他应用后仍能持续记录轨迹。",
+            blocking = false
+        )
     }
 
     // 前台定位授予后的后续流程：后台引导 / 通知
@@ -152,7 +130,6 @@ fun PermissionRequester(
 
     fun startPermissionFlow() {
         when {
-            // 全部就绪（含后台定位）才算完成；Android 11+ 后台缺失时走 else 不阻塞
             permissionManager.hasRequiredPermissions() && permissionManager.hasBackgroundLocation() ->
                 onPermissionResult(true)
             !permissionManager.hasForegroundLocation() -> {
@@ -169,10 +146,6 @@ fun PermissionRequester(
                     )
                 }
             }
-            // Android 10 及以下后台定位缺失时自动请求（系统弹窗含"始终允许"）；
-            // Android 11+ 不自动打扰，由前台授权回调或设置页引导
-            !permissionManager.hasBackgroundLocation() && Build.VERSION.SDK_INT < Build.VERSION_CODES.R ->
-                requestBackgroundLocation()
             else -> requestNotificationPermission()
         }
     }
@@ -185,35 +158,25 @@ fun PermissionRequester(
     }
 
     // 权限说明对话框
-    showRationaleDialog?.let { permission ->
-        val isBackground = permission == Manifest.permission.ACCESS_BACKGROUND_LOCATION
+    showRationaleDialog?.let {
         AlertDialog(
             onDismissRequest = {
                 showRationaleDialog = null
                 onPermissionResult(false)
             },
-            title = { Text(if (isBackground) "需要后台定位权限" else "需要定位权限") },
+            title = { Text("需要定位权限") },
             text = {
-                Text(
-                    if (isBackground)
-                        "为了在息屏或后台时持续记录轨迹，需要允许「始终允许」定位权限。\n\n如果不授予此权限，切换到其他应用或锁屏后记录可能中断。"
-                    else
-                        "LocLogger 需要定位权限来获取位置信息并记录轨迹。\n\n请授予「精确位置」权限以获得最佳精度。"
-                )
+                Text("LocLogger 需要定位权限来获取位置信息并记录轨迹。\n\n请授予「精确位置」权限以获得最佳精度。")
             },
             confirmButton = {
                 Button(onClick = {
                     showRationaleDialog = null
-                    if (isBackground) {
-                        backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                    } else {
-                        locationLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
-                            )
+                    locationLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
                         )
-                    }
+                    )
                 }) {
                     Text("授予权限")
                 }
@@ -229,7 +192,7 @@ fun PermissionRequester(
         )
     }
 
-    // 引导去设置对话框（前台被拒不再询问 / Android 11+ 后台定位）
+    // 引导去设置对话框（前台被拒不再询问 / 后台定位）
     showSettingsDialog?.let { prompt ->
         AlertDialog(
             onDismissRequest = {
@@ -324,10 +287,7 @@ fun PermissionStatusCard(
             PermissionItem(
                 icon = Icons.Default.LocationOn,
                 title = "后台定位",
-                subtitle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                    "息屏持续记录（Android 11+ 需到系统设置开启）"
-                else
-                    "息屏时持续记录",
+                subtitle = "息屏持续记录（需到系统设置开启「允许所有时间」）",
                 granted = hasBackground
             )
 

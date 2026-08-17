@@ -23,8 +23,6 @@ val LocalColorMode = staticCompositionLocalOf { ColorMode.SYSTEM.value }
 val LocalEnableBlur = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBar = staticCompositionLocalOf { true }
 val LocalEnableFloatingBottomBarBlur = staticCompositionLocalOf { true }
-val LocalDynamicColor = staticCompositionLocalOf { false }
-val LocalPureBlack = staticCompositionLocalOf { false }
 
 @Composable
 fun GpsLoggerTheme(
@@ -58,8 +56,6 @@ fun GpsLoggerTheme(
         LocalEnableBlur provides enableBlur,
         LocalEnableFloatingBottomBar provides enableFloatingBottomBar,
         LocalEnableFloatingBottomBarBlur provides enableFloatingBottomBarBlur,
-        LocalDynamicColor provides dynamicColor,
-        LocalPureBlack provides pureBlack,
     ) {
         when (uiMode) {
             UiMode.Material -> {

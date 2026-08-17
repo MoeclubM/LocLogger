@@ -7,10 +7,6 @@
 -keep @androidx.room.Entity class *
 -dontwarn androidx.room.paging.**
 
-# Kotlinx Serialization
--keepattributes *Annotation*, InnerClasses
--dontnote kotlinx.serialization.AnnotationsKt
-
 # Compose
 -dontwarn androidx.compose.**
 

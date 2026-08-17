@@ -2,107 +2,13 @@
 <resources>
     <string name="app_name">LocLogger</string>
 
-    <!-- 底部导航 -->
     <string name="tab_dashboard">定位</string>
     <string name="tab_track">轨迹</string>
     <string name="tab_tracks">记录</string>
     <string name="tab_settings">设置</string>
 
-    <!-- 仪表盘 -->
-    <string name="latitude">纬度</string>
-    <string name="longitude">经度</string>
-    <string name="altitude">高度</string>
-    <string name="speed">速度</string>
-    <string name="accuracy">精度</string>
-    <string name="bearing">方向</string>
-    <string name="satellites">卫星</string>
-    <string name="time">时间</string>
-    <string name="start_recording">开始记录</string>
-    <string name="pause_recording">暂停</string>
-    <string name="resume_recording">继续</string>
-    <string name="stop_recording">停止</string>
-    <string name="lock">锁定</string>
-    <string name="add_annotation">添加批注</string>
-
-    <!-- 方向 -->
-    <string-array name="directions_16">
-        <item>北</item>
-        <item>北偏东</item>
-        <item>东北偏北</item>
-        <item>东北</item>
-        <item>东北偏东</item>
-        <item>东偏北</item>
-        <item>东</item>
-        <item>东偏南</item>
-        <item>东南偏东</item>
-        <item>东南</item>
-        <item>东南偏南</item>
-        <item>南偏东</item>
-        <item>南</item>
-        <item>南偏西</item>
-        <item>西南偏南</item>
-        <item>西南</item>
-        <item>西南偏西</item>
-        <item>西偏南</item>
-        <item>西</item>
-        <item>西偏北</item>
-        <item>西北偏西</item>
-        <item>西北</item>
-        <item>西北偏北</item>
-        <item>北偏西</item>
-    </string-array>
-
-    <!-- 活动类型 -->
-    <string name="activity_walk">步行</string>
-    <string name="activity_run">跑步</string>
-    <string name="activity_cycle">骑行</string>
-    <string name="activity_drive">驾车</string>
-    <string name="activity_bus">公交</string>
-    <string name="activity_boat">船</string>
-
-    <!-- 设置 -->
-    <string name="settings_display">显示</string>
-    <string name="settings_keep_screen_on">保持屏幕常亮</string>
-    <string name="settings_theme">当前主题</string>
-    <string name="settings_color_theme">颜色主题</string>
-    <string name="settings_unit">测量单位</string>
-    <string name="settings_speed_unit">速度单位</string>
-    <string name="settings_coord_format">坐标格式</string>
-    <string name="settings_bearing">方向显示</string>
-    <string name="settings_recording">记录</string>
-    <string name="settings_gps_interval">GPS 更新周期</string>
-    <string name="settings_time_filter">时间间隔过滤</string>
-    <string name="settings_distance_filter">距离过滤</string>
-    <string name="settings_improve_accuracy">提高 GPS 精度</string>
-    <string name="settings_egm96">EGM96 高度修正</string>
-    <string name="settings_export">导出</string>
-    <string name="settings_export_formats">导出格式</string>
-    <string name="settings_gpx_version">GPX 版本</string>
-    <string name="settings_backup">备份</string>
-    <string name="settings_backup_now">立即备份</string>
-    <string name="settings_restore">恢复备份</string>
-    <string name="settings_about">关于</string>
-
-    <!-- 主题 -->
-    <string name="theme_material">Material 3</string>
-    <string name="theme_miuix">Miuix</string>
-
-    <!-- 单位 -->
-    <string name="unit_metric">公制</string>
-    <string name="unit_imperial">英制</string>
-    <string name="speed_kmh">公里/时</string>
-    <string name="speed_mph">英里/时</string>
-    <string name="speed_ms">米/秒</string>
-    <string name="coord_dms">度分秒</string>
-    <string name="coord_decimal">十进制度</string>
-
-    <!-- 通知 -->
     <string name="notification_channel_name">GPS 记录</string>
     <string name="notification_channel_desc">显示轨迹记录状态</string>
     <string name="notification_recording">正在记录轨迹…</string>
     <string name="notification_paused">记录已暂停</string>
-
-    <!-- 权限 -->
-    <string name="permission_required">需要权限</string>
-    <string name="permission_location_needed">需要定位权限才能记录轨迹</string>
 </resources>

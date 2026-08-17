@@ -3,7 +3,6 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.agp.app)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -107,7 +106,6 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.serialization.json)
 
     // Hilt
     implementation(libs.hilt.android)
@@ -124,7 +122,6 @@ dependencies {
 
     // Miuix KMP - Liquid Glass 效果
     implementation(libs.miuix.ui)
-    implementation(libs.miuix.icons)
     implementation(libs.miuix.blur)
 
     // Material Kolor - 动态取色
@@ -132,9 +129,6 @@ dependencies {
 
     // MapLibre - 多源地图（OSM/Google/高德）
     implementation(libs.maplibre.android)
-
-    // Google Play Services Location
-    implementation(libs.playservices.location)
 
     // AndroidX Core
     implementation(libs.androidx.core.ktx)

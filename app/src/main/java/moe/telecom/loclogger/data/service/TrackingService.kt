@@ -12,7 +12,6 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Binder
-import android.os.Build
 import android.os.IBinder
 import android.os.Handler
 import android.os.Looper
@@ -45,7 +44,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.math.abs
 
 data class TrackingState(
     val isRecording: Boolean = false,
@@ -95,6 +93,7 @@ class TrackingService : Service() {
     private var currentTrackId: Long? = null
     private var lastLocation: Location? = null
     private var egm96Enabled = false
+    private var useNetworkLocation = true
     private var startTime: Long = 0L
     private var pausedDuration: Long = 0L
     private var lastPauseTime: Long = 0L
@@ -138,7 +137,11 @@ class TrackingService : Service() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
         // 实时定位：服务绑定即开始监听，未录制也能显示定位
-        startLocationUpdates()
+        serviceScope.launch {
+            val settings = settingsRepository.settings.first()
+            useNetworkLocation = settings.improveAccuracy
+            startLocationUpdates(intervalMs = settings.gpsInterval.toLong())
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -178,9 +181,10 @@ class TrackingService : Service() {
             acquireWakeLock()
             val settings = settingsRepository.settings.first()
             egm96Enabled = settings.egm96Correction
+            useNetworkLocation = settings.improveAccuracy
             if (egm96Enabled) egm96Repository.ensureLoaded()
             startLocationUpdates(intervalMs = settings.gpsInterval.toLong())
-            startForeground(NOTIFICATION_ID, buildNotification("正在记录轨迹…"))
+            startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.notification_recording)))
             startDurationUpdates()
         }
     }
@@ -189,14 +193,14 @@ class TrackingService : Service() {
         if (!_trackingState.value.isRecording || _trackingState.value.isPaused) return
         lastPauseTime = System.currentTimeMillis()
         _trackingState.value = _trackingState.value.copy(isPaused = true)
-        updateNotification("记录已暂停")
+        updateNotification(getString(R.string.notification_paused))
     }
 
     fun resumeTracking() {
         if (!_trackingState.value.isRecording || !_trackingState.value.isPaused) return
         pausedDuration += System.currentTimeMillis() - lastPauseTime
         _trackingState.value = _trackingState.value.copy(isPaused = false)
-        updateNotification("正在记录轨迹…")
+        updateNotification(getString(R.string.notification_recording))
     }
 
     fun stopTracking() {
@@ -379,8 +383,8 @@ class TrackingService : Service() {
 
     private fun startLocationUpdates(intervalMs: Long = MIN_TIME_MS) {
         try {
-            // 网络定位兜底：GPS 在室内/无卫星信号时也能快速显示实时位置
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            locationManager.removeUpdates(locationListener)
+            if (useNetworkLocation && locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                 locationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER,
                     intervalMs,
@@ -389,7 +393,6 @@ class TrackingService : Service() {
                     Looper.getMainLooper()
                 )
             }
-            // 优先使用 GPS_PROVIDER 高精度定位，更新周期跟随设置
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 intervalMs,
@@ -397,10 +400,7 @@ class TrackingService : Service() {
                 locationListener,
                 Looper.getMainLooper()
             )
-            // 注册 GnssStatus 回调获取卫星数（仅首次，避免重复注册）
-            if (!locationUpdatesStarted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                // handler 必须绑定 Looper：startLocationUpdates 可能在后台协程线程调用，
-                // 传 null 会尝试用当前线程创建 Handler 导致 RuntimeException
+            if (!locationUpdatesStarted) {
                 locationManager.registerGnssStatusCallback(gnssCallback, Handler(Looper.getMainLooper()))
                 locationUpdatesStarted = true
             }
@@ -411,7 +411,7 @@ class TrackingService : Service() {
 
     private fun stopLocationUpdates() {
         locationManager.removeUpdates(locationListener)
-        if (locationUpdatesStarted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (locationUpdatesStarted) {
             locationManager.unregisterGnssStatusCallback(gnssCallback)
             locationUpdatesStarted = false
         }
@@ -445,17 +445,15 @@ class TrackingService : Service() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = getString(R.string.notification_channel_desc)
-                setShowBadge(false)
-            }
-            notificationManager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = getString(R.string.notification_channel_desc)
+            setShowBadge(false)
         }
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun buildNotification(text: String): Notification {

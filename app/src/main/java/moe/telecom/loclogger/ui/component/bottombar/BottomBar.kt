@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,12 +74,6 @@ fun rememberMainPagerState(
         MainPagerState(pagerState, coroutineScope)
     }
 }
-
-@Immutable
-data class BottomBarBadge(
-    val count: Int = 0,
-    val isUpdate: Boolean = false
-)
 
 @Composable
 fun BottomBar(

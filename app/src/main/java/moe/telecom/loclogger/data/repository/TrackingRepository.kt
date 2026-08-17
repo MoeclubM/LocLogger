@@ -19,7 +19,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -73,15 +72,6 @@ class TrackingRepository @Inject constructor(
         }
     }
 
-    fun unbindService() {
-        if (bound) {
-            stateCollectionJob?.cancel()
-            context.unbindService(connection)
-            bound = false
-            trackingService = null
-        }
-    }
-
     fun startTracking() {
         TrackingService.start(context)
         bindService()
@@ -105,13 +95,8 @@ class TrackingRepository @Inject constructor(
 
     // 数据库操作
     fun getAllTracks(): Flow<List<TrackEntity>> = trackDao.getAllTracks()
-    fun getActiveTrack(): Flow<TrackEntity?> = trackDao.getActiveTrack()
-    fun getPointsForTrack(trackId: Long): Flow<List<TrackPointEntity>> =
-        trackPointDao.getPointsForTrack(trackId)
     suspend fun getPointsForTrackSync(trackId: Long): List<TrackPointEntity> =
         trackPointDao.getPointsForTrackSync(trackId)
-    fun getAnnotationsForTrack(trackId: Long): Flow<List<AnnotationEntity>> =
-        annotationDao.getAnnotationsForTrack(trackId)
     suspend fun getAnnotationsForTrackSync(trackId: Long): List<AnnotationEntity> =
         annotationDao.getAnnotationsForTrackSync(trackId)
     suspend fun getTrackById(id: Long): TrackEntity? = trackDao.getTrackById(id)

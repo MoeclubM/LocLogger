@@ -2,10 +2,8 @@
 agp = "9.3.1"
 kotlin = "2.4.10"
 ksp = "2.3.11"
-compose-bom = "2026.06.01"
+compose-bom = "2026.08.00"
 miuix = "0.9.3"
-navigation3 = "1.1.5"
-navigationevent = "1.1.2"
 hilt = "2.60.1"
 hiltNavigationCompose = "1.4.0"
 room = "2.8.4"
@@ -13,10 +11,8 @@ datastore = "1.2.1"
 lifecycle = "2.11.0"
 activityCompose = "1.13.0"
 coroutines = "1.11.0"
-serialization = "1.11.0"
 materialKolor = "5.0.0"
-maplibre = "13.4.1"
-playservicesLocation = "21.4.0"
+maplibre = "13.5.0"
 androidxCore = "1.19.0"
 
 [libraries]
@@ -30,11 +26,7 @@ androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
-androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
-androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
-androidx-navigationevent-compose = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 # Hilt
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
@@ -47,20 +39,16 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 # Miuix KMP - Liquid Glass 效果
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui-android", version.ref = "miuix" }
-miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons-android", version.ref = "miuix" }
 miuix-blur = { module = "top.yukonga.miuix.kmp:miuix-blur-android", version.ref = "miuix" }
 # Material Kolor - 动态取色
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 # MapLibre - 多源地图（OSM/Google/高德，raster 瓦片）
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
-# Google Play Services Location
-playservices-location = { module = "com.google.android.gms:play-services-location", version.ref = "playservicesLocation" }
 # AndroidX Core
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

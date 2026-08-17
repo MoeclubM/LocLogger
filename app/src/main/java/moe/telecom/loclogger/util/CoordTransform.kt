@@ -8,7 +8,6 @@ import kotlin.math.sqrt
 object CoordTransform {
     private const val A = 6378245.0
     private const val EE = 0.00669342162296594323
-    private const val X_PI = PI * 3000.0 / 180.0
 
     fun outOfChina(lat: Double, lon: Double): Boolean {
         if (lon < 72.004 || lon > 137.8347) return true
@@ -43,10 +42,5 @@ object CoordTransform {
         dLat = (dLat * 180.0) / ((A * (1 - EE)) / (magic * sqrtMagic) * PI)
         dLon = (dLon * 180.0) / (A / sqrtMagic * kotlin.math.cos(radLat) * PI)
         return Pair(lat + dLat, lon + dLon)
-    }
-
-    fun gcj02ToWgs84(lat: Double, lon: Double): Pair<Double, Double> {
-        val g = wgs84ToGcj02(lat, lon)
-        return Pair(lat * 2 - g.first, lon * 2 - g.second)
     }
 }

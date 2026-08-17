@@ -65,13 +65,4 @@ class DashboardViewModel @Inject constructor(
     init {
         trackingRepository.bindService()
     }
-
-    fun toggleRecording() {
-        val state = uiState.value
-        if (state.isRecording) {
-            trackingRepository.stopTracking()
-        } else {
-            trackingRepository.startTracking()
-        }
-    }
 }

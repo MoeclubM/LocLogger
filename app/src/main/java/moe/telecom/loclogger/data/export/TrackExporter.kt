@@ -1,11 +1,8 @@
 package moe.telecom.loclogger.data.export
 
-import android.content.Context
-import android.net.Uri
 import moe.telecom.loclogger.data.local.entity.AnnotationEntity
 import moe.telecom.loclogger.data.local.entity.TrackEntity
 import moe.telecom.loclogger.data.local.entity.TrackPointEntity
-import java.io.File
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.io.Writer
