@@ -3,6 +3,8 @@ package moe.telecom.loclogger.data.export
 import moe.telecom.loclogger.data.local.entity.AnnotationEntity
 import moe.telecom.loclogger.data.local.entity.TrackEntity
 import moe.telecom.loclogger.data.local.entity.TrackPointEntity
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.io.Writer
@@ -15,7 +17,7 @@ import java.util.zip.ZipOutputStream
 
 /**
  * 轨迹导出工具
- * 支持格式：GPX (1.0/1.1/2.2)、KML、KMZ、TXT、CSV
+ * 支持格式：GPX (1.0/1.1/2.2)、KML、KMZ、TXT、CSV、JSON
  */
 object TrackExporter {
 
@@ -75,12 +77,12 @@ object TrackExporter {
                 if (pt.altitude != null) w.write("<ele>${pt.altitude}</ele>")
                 w.write("<time>${isoFormat.format(Date(pt.timestamp))}</time>")
                 if (pt.speed != null) w.write("<speed>${pt.speed}</speed>")
-                if (pt.accuracy != null) {
-                    w.write("<extensions><hdop>${pt.accuracy / 5.0}</hdop></extensions>")
+                if (pt.satellitesUsed > 0) w.write("<sat>${pt.satellitesUsed}</sat>")
+                val extras = buildString {
+                    if (pt.accuracy != null) append("<hdop>${pt.accuracy / 5.0}</hdop>")
+                    if (pt.pressureHpa != null) append("<pressure>${pt.pressureHpa}</pressure>")
                 }
-                if (pt.satellitesUsed > 0) {
-                    w.write("<sat>${pt.satellitesUsed}</sat>")
-                }
+                if (extras.isNotEmpty()) w.write("<extensions>$extras</extensions>")
                 w.write("</trkpt>\n")
             }
 
@@ -193,14 +195,16 @@ object TrackExporter {
             w.write("距 离: ${"%.2f".format(track.totalDistance)} 米\n")
             w.write("\n")
 
-            w.write("时间,纬度,经度,高度,速度(m/s),精度,卫星\n")
+            w.write("时间,纬度,经度,海拔,EGM96海拔,速度(m/s),精度,卫星,气压(hPa)\n")
             points.forEach { pt ->
                 w.write("${timeFormat.format(Date(pt.timestamp))}," +
                         "${pt.latitude},${pt.longitude}," +
                         "${pt.altitude ?: ""}," +
+                        "${pt.altitudeEGM96 ?: ""}," +
                         "${pt.speed ?: ""}," +
                         "${pt.accuracy ?: ""}," +
-                        "${pt.satellitesUsed}\n")
+                        "${pt.satellitesUsed}," +
+                        "${pt.pressureHpa ?: ""}\n")
             }
 
             if (annotations.isNotEmpty()) {
@@ -221,14 +225,68 @@ object TrackExporter {
     ) {
         val writer = OutputStreamWriter(out, Charsets.UTF_8)
         writer.use { w ->
-            w.write("timestamp,latitude,longitude,altitude,speed,accuracy,bearing,satellites\n")
+            w.write("timestamp,latitude,longitude,altitude,altitudeEGM96,speed,accuracy,bearing,satellitesUsed,satellitesVisible,pressureHpa,isPausePoint\n")
             points.forEach { pt ->
                 w.write("${pt.timestamp},${pt.latitude},${pt.longitude}," +
-                        "${pt.altitude ?: ""},${pt.speed ?: ""}," +
+                        "${pt.altitude ?: ""},${pt.altitudeEGM96 ?: ""},${pt.speed ?: ""}," +
                         "${pt.accuracy ?: ""},${pt.bearing ?: ""}," +
-                        "${pt.satellitesUsed}\n")
+                        "${pt.satellitesUsed},${pt.satellitesVisible}," +
+                        "${pt.pressureHpa ?: ""},${pt.isPausePoint}\n")
             }
         }
+    }
+
+    // ==================== JSON 导出 ====================
+
+    fun exportJson(
+        out: OutputStream,
+        track: TrackEntity,
+        points: List<TrackPointEntity>,
+        annotations: List<AnnotationEntity>
+    ) {
+        val root = JSONObject().apply {
+            put("name", track.name)
+            put("activityType", track.activityType)
+            put("startTime", track.startTime)
+            put("endTime", track.endTime ?: JSONObject.NULL)
+            put("totalDistance", track.totalDistance)
+            put("maxSpeed", track.maxSpeed.toDouble())
+            put("avgSpeed", track.avgSpeed.toDouble())
+            put("maxAltitude", track.maxAltitude ?: JSONObject.NULL)
+            put("minAltitude", track.minAltitude ?: JSONObject.NULL)
+            put("altitudeDiff", track.altitudeDiff)
+            put("pointCount", track.pointCount)
+            put("annotationCount", track.annotationCount)
+            put("points", JSONArray().also { arr ->
+                points.forEach { pt ->
+                    arr.put(JSONObject().apply {
+                        put("timestamp", pt.timestamp)
+                        put("latitude", pt.latitude)
+                        put("longitude", pt.longitude)
+                        put("altitude", pt.altitude ?: JSONObject.NULL)
+                        put("altitudeEGM96", pt.altitudeEGM96 ?: JSONObject.NULL)
+                        put("speed", pt.speed?.toDouble() ?: JSONObject.NULL)
+                        put("accuracy", pt.accuracy?.toDouble() ?: JSONObject.NULL)
+                        put("bearing", pt.bearing?.toDouble() ?: JSONObject.NULL)
+                        put("satellitesUsed", pt.satellitesUsed)
+                        put("satellitesVisible", pt.satellitesVisible)
+                        put("pressureHpa", pt.pressureHpa?.toDouble() ?: JSONObject.NULL)
+                        put("isPausePoint", pt.isPausePoint)
+                    })
+                }
+            })
+            put("annotations", JSONArray().also { arr ->
+                annotations.forEach { ann ->
+                    arr.put(JSONObject().apply {
+                        put("timestamp", ann.timestamp)
+                        put("latitude", ann.latitude)
+                        put("longitude", ann.longitude)
+                        put("description", ann.description)
+                    })
+                }
+            })
+        }
+        OutputStreamWriter(out, Charsets.UTF_8).use { it.write(root.toString(2)) }
     }
 
     // ==================== 工具方法 ====================
@@ -243,6 +301,7 @@ object TrackExporter {
             "kml" -> "application/vnd.google-earth.kml+xml"
             "kmz" -> "application/vnd.google-earth.kmz"
             "csv" -> "text/csv"
+            "json" -> "application/json"
             else -> "text/plain"
         }
     }

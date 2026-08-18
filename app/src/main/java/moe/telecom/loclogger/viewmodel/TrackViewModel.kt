@@ -28,7 +28,11 @@ data class TrackUiState(
     val maxSpeed: Float = 0f,
     val avgSpeed: Float = 0f,
     val altitudeDiff: Double = 0.0,
-    val overallDirection: String? = null
+    val overallDirection: String? = null,
+    val altitude: Double? = null,
+    val maxAltitude: Double? = null,
+    val minAltitude: Double? = null,
+    val pressureHpa: Float? = null
 )
 
 @HiltViewModel
@@ -56,7 +60,11 @@ class TrackViewModel @Inject constructor(
             maxSpeed = state.maxSpeed,
             avgSpeed = state.avgSpeed,
             altitudeDiff = state.altitudeDiff,
-            overallDirection = state.bearing?.let { bearingToDirection(it) }
+            overallDirection = state.bearing?.let { bearingToDirection(it) },
+            altitude = state.altitude,
+            maxAltitude = state.maxAltitude,
+            minAltitude = state.minAltitude,
+            pressureHpa = state.pressureHpa
         )
     }.stateIn(
         scope = viewModelScope,
@@ -86,7 +94,8 @@ class TrackViewModel @Inject constructor(
 
     fun pause() = trackingRepository.pauseTracking()
     fun resume() = trackingRepository.resumeTracking()
-    fun stop() = trackingRepository.stopTracking()
+    fun stop(name: String? = null, activityType: Int? = null) =
+        trackingRepository.stopTracking(name, activityType)
 
     fun toggleLock() {
         _isLocked.value = !_isLocked.value

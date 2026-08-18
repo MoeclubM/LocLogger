@@ -53,9 +53,9 @@ fun GpsLoggerTheme(
     CompositionLocalProvider(
         LocalUiMode provides uiMode,
         LocalColorMode provides colorMode.value,
-        LocalEnableBlur provides enableBlur,
-        LocalEnableFloatingBottomBar provides enableFloatingBottomBar,
-        LocalEnableFloatingBottomBarBlur provides enableFloatingBottomBarBlur,
+        LocalEnableBlur provides (uiMode == UiMode.Miuix && enableBlur),
+        LocalEnableFloatingBottomBar provides (uiMode == UiMode.Miuix && enableFloatingBottomBar),
+        LocalEnableFloatingBottomBarBlur provides (uiMode == UiMode.Miuix && enableFloatingBottomBarBlur),
     ) {
         when (uiMode) {
             UiMode.Material -> {

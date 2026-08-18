@@ -3,6 +3,7 @@ package moe.telecom.loclogger.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import moe.telecom.loclogger.data.repository.TrackingRepository
+import moe.telecom.loclogger.data.service.SatelliteInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,12 +23,14 @@ data class DashboardUiState(
     val bearing: Float? = null,
     val satellitesUsed: Int = 0,
     val satellitesVisible: Int = 0,
+    val satellites: List<SatelliteInfo> = emptyList(),
     val time: String? = null,
     val isRecording: Boolean = false,
     val isPaused: Boolean = false,
     val trackPoints: Int = 0,
     val distance: Double = 0.0,
-    val duration: Long = 0L
+    val duration: Long = 0L,
+    val pressureHpa: Float? = null
 )
 
 @HiltViewModel
@@ -48,12 +51,14 @@ class DashboardViewModel @Inject constructor(
                 bearing = state.bearing,
                 satellitesUsed = state.satellitesUsed,
                 satellitesVisible = state.satellitesVisible,
+                satellites = state.satellites,
                 time = state.lastUpdateTime.takeIf { it > 0 }?.let { timeFormat.format(Date(it)) },
                 isRecording = state.isRecording,
                 isPaused = state.isPaused,
                 trackPoints = state.pointCount,
                 distance = state.distance,
-                duration = state.duration
+                duration = state.duration,
+                pressureHpa = state.pressureHpa
             )
         }
         .stateIn(

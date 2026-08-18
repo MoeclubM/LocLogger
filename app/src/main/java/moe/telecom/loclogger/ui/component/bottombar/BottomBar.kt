@@ -83,7 +83,7 @@ fun BottomBar(
 ) {
     when (LocalUiMode.current) {
         UiMode.Miuix -> BottomBarMiuix(modifier, blurBackdrop, backdrop)
-        UiMode.Material -> BottomBarMaterial(modifier)
+        UiMode.Material -> BottomBarMaterial()
     }
 }
 

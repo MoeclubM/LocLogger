@@ -1,5 +1,6 @@
 package moe.telecom.loclogger.ui.screen.dashboard
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
@@ -47,17 +49,21 @@ import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.viewmodel.DashboardUiState
 import moe.telecom.loclogger.viewmodel.DashboardViewModel
+import moe.telecom.loclogger.viewmodel.SettingsViewModel
 
 @Composable
 fun DashboardScreen(
-    viewModel: DashboardViewModel = hiltViewModel()
+    viewModel: DashboardViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var mapSource by remember { mutableStateOf(MapSources.AMAP.name) }
+    val settings by settingsViewModel.settings.collectAsState()
+    val mapSource = settings.mapSource
     var showMapSourceMenu by remember { mutableStateOf(false) }
     var followLocation by remember { mutableStateOf(true) }
     var recenterRequest by remember { mutableIntStateOf(0) }
     var showFullscreen by remember { mutableStateOf(false) }
+    var showSatellites by remember { mutableStateOf(false) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val portrait = maxWidth <= maxHeight
@@ -70,7 +76,7 @@ fun DashboardScreen(
                     showMapSourceMenu = showMapSourceMenu,
                     followLocation = followLocation,
                     recenterRequest = recenterRequest,
-                    onMapSourceChange = { mapSource = it },
+                    onMapSourceChange = { settingsViewModel.updateMapSource(it) },
                     onShowMenuChange = { showMapSourceMenu = it },
                     onUserGesture = { followLocation = false },
                     onFullscreen = { showFullscreen = true },
@@ -82,7 +88,11 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .height(280.dp)
                 )
-                DataPanel(uiState = uiState, modifier = Modifier.weight(1f))
+                DataPanel(
+                    uiState = uiState,
+                    onSatelliteClick = { showSatellites = true },
+                    modifier = Modifier.weight(1f)
+                )
             }
         } else {
             // 横屏：左地图右数据
@@ -93,7 +103,7 @@ fun DashboardScreen(
                     showMapSourceMenu = showMapSourceMenu,
                     followLocation = followLocation,
                     recenterRequest = recenterRequest,
-                    onMapSourceChange = { mapSource = it },
+                    onMapSourceChange = { settingsViewModel.updateMapSource(it) },
                     onShowMenuChange = { showMapSourceMenu = it },
                     onUserGesture = { followLocation = false },
                     onFullscreen = { showFullscreen = true },
@@ -103,7 +113,11 @@ fun DashboardScreen(
                     },
                     modifier = Modifier.weight(1.1f)
                 )
-                DataPanel(uiState = uiState, modifier = Modifier.weight(1f))
+                DataPanel(
+                    uiState = uiState,
+                    onSatelliteClick = { showSatellites = true },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -114,9 +128,20 @@ fun DashboardScreen(
             currentLat = uiState.latitude,
             currentLon = uiState.longitude,
             trackPoints = emptyList(),
+            mapSourceName = mapSource,
+            onMapSourceChange = { settingsViewModel.updateMapSource(it) },
             showMyLocation = true,
             initialFollow = followLocation,
             onClose = { showFullscreen = false }
+        )
+    }
+
+    if (showSatellites) {
+        SatelliteDetailSheet(
+            used = uiState.satellitesUsed,
+            visible = uiState.satellitesVisible,
+            satellites = uiState.satellites,
+            onDismiss = { showSatellites = false }
         )
     }
 }
@@ -233,7 +258,11 @@ private fun MapArea(
 }
 
 @Composable
-private fun DataPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) {
+private fun DataPanel(
+    uiState: DashboardUiState,
+    onSatelliteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -261,12 +290,22 @@ private fun DataPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) 
                     label = "时间",
                     value = uiState.time ?: "--"
                 )
+                LocationRow(
+                    label = "海拔",
+                    value = uiState.altitude?.let { String.format("%.1f 米", it) } ?: "--"
+                )
+                LocationRow(
+                    label = "气压",
+                    value = uiState.pressureHpa?.let { String.format("%.1f hPa", it) } ?: "--"
+                )
             }
         }
 
         // 卫星信息
         GlassCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onSatelliteClick),
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(
@@ -288,7 +327,14 @@ private fun DataPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) 
                         fontWeight = FontWeight.Bold
                     )
                 }
-                GpsStatusIndicator(satellites = uiState.satellitesUsed)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    GpsStatusIndicator(satellites = uiState.satellitesUsed)
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "查看详情",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -298,8 +344,8 @@ private fun DataPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) 
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             DataCard(
-                label = "高度",
-                value = uiState.altitude?.let { "${it.toInt()} 米" } ?: "--",
+                label = "海拔",
+                value = uiState.altitude?.let { String.format("%.1f 米", it) } ?: "--",
                 modifier = Modifier.weight(1f)
             )
             DataCard(

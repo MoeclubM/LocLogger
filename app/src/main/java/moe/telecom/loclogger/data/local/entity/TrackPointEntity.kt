@@ -30,5 +30,6 @@ data class TrackPointEntity(
     val timestamp: Long,
     val satellitesUsed: Int = 0,
     val satellitesVisible: Int = 0,
-    val isPausePoint: Boolean = false
+    val isPausePoint: Boolean = false,
+    val pressureHpa: Float? = null
 )

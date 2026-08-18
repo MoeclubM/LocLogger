@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
@@ -61,8 +62,8 @@ import moe.telecom.loclogger.data.repository.TrackingRepository
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.ui.component.map.FullscreenMap
 import moe.telecom.loclogger.ui.component.map.GpsMapView
-import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.ui.screen.tracks.TrackItem
+import moe.telecom.loclogger.viewmodel.SettingsViewModel
 import moe.telecom.loclogger.viewmodel.TrackDetail
 import java.io.File
 import java.text.SimpleDateFormat
@@ -147,11 +148,15 @@ class TrackDetailViewModel @Inject constructor(
 fun TrackDetailScreen(
     trackItem: TrackItem,
     onBack: () -> Unit,
-    viewModel: TrackDetailViewModel = hiltViewModel()
+    viewModel: TrackDetailViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val settings by settingsViewModel.settings.collectAsState()
+    val mapSource = settings.mapSource
     val context = LocalContext.current
     var showFullscreen by remember { mutableStateOf(false) }
+    var showTrackPoints by remember { mutableStateOf(false) }
 
     LaunchedEffect(trackItem.id) {
         viewModel.loadDetail(trackItem)
@@ -209,9 +214,10 @@ fun TrackDetailScreen(
                             annotations = detail.annotations.map {
                                 Triple(it.latitude, it.longitude, it.description)
                             },
-                            mapSourceName = MapSources.AMAP.name,
+                            mapSourceName = mapSource,
                             followLocation = false,
                             showMyLocation = false,
+                            showTrackPoints = showTrackPoints,
                             modifier = Modifier.fillMaxSize()
                         )
                         IconButton(
@@ -223,6 +229,24 @@ fun TrackDetailScreen(
                                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
                         ) {
                             Icon(Icons.Default.Fullscreen, contentDescription = "全屏")
+                        }
+                        IconButton(
+                            onClick = { showTrackPoints = !showTrackPoints },
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(12.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (showTrackPoints) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                    else MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                                )
+                        ) {
+                            Icon(
+                                Icons.Default.FiberManualRecord,
+                                contentDescription = if (showTrackPoints) "隐藏记录点" else "显示记录点",
+                                tint = if (showTrackPoints) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
 
@@ -249,6 +273,21 @@ fun TrackDetailScreen(
                             ) {
                                 StatItem("平均速度", String.format("%.1f km/h", track.avgSpeed * 3.6), Modifier.weight(1f))
                                 StatItem("最高速度", String.format("%.1f km/h", track.maxSpeed * 3.6), Modifier.weight(1f))
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                StatItem(
+                                    "最高海拔",
+                                    track.maxAltitude?.let { String.format("%.1f 米", it) } ?: "--",
+                                    Modifier.weight(1f)
+                                )
+                                StatItem(
+                                    "最低海拔",
+                                    track.minAltitude?.let { String.format("%.1f 米", it) } ?: "--",
+                                    Modifier.weight(1f)
+                                )
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -309,8 +348,12 @@ fun TrackDetailScreen(
                         annotations = detail.annotations.map {
                             Triple(it.latitude, it.longitude, it.description)
                         },
+                        mapSourceName = mapSource,
+                        onMapSourceChange = { settingsViewModel.updateMapSource(it) },
                         showMyLocation = false,
                         initialFollow = false,
+                        showTrackPoints = showTrackPoints,
+                        onShowTrackPointsChange = { showTrackPoints = it },
                         onClose = { showFullscreen = false }
                     )
                 }

@@ -22,7 +22,8 @@ data class AppSettings(
     val gpsInterval: Int = 1000,
     val improveAccuracy: Boolean = true,
     val egm96Correction: Boolean = false,
-    val gpxVersion: String = "1.1"
+    val gpxVersion: String = "1.1",
+    val mapSource: String = "高德地图"
 )
 
 @HiltViewModel

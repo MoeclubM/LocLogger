@@ -87,4 +87,8 @@ class SettingsViewModel @Inject constructor(
     fun updateGpxVersion(version: String) {
         viewModelScope.launch { settingsRepository.updateGpxVersion(version) }
     }
+
+    fun updateMapSource(name: String) {
+        viewModelScope.launch { settingsRepository.updateMapSource(name) }
+    }
 }

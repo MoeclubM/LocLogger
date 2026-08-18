@@ -6,20 +6,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
@@ -31,9 +36,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -48,17 +55,28 @@ import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
 import moe.telecom.loclogger.ui.component.map.FullscreenMap
 import moe.telecom.loclogger.ui.component.map.GpsMapView
+import moe.telecom.loclogger.ui.screen.tracks.ActivityType
+import moe.telecom.loclogger.viewmodel.SettingsViewModel
 import moe.telecom.loclogger.viewmodel.TrackViewModel
 
 @Composable
 fun TrackScreen(
-    viewModel: TrackViewModel = hiltViewModel()
+    viewModel: TrackViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val settings by settingsViewModel.settings.collectAsState()
+    val mapSource = settings.mapSource
     var showAnnotationDialog by remember { mutableStateOf(false) }
     var annotationText by remember { mutableStateOf("") }
     val trackPoints by viewModel.trackPoints.collectAsState()
     var showFullscreen by remember { mutableStateOf(false) }
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var saveName by remember { mutableStateOf("") }
+    var saveType by remember { mutableStateOf(ActivityType.WALK) }
+    var followLocation by remember { mutableStateOf(true) }
+    var recenterRequest by remember { mutableIntStateOf(0) }
+    var showTrackPoints by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -84,9 +102,12 @@ fun TrackScreen(
                 currentLat = uiState.latitude,
                 currentLon = uiState.longitude,
                 trackPoints = trackPoints,
-                mapSourceName = "高德地图",
-                followLocation = true,
+                mapSourceName = mapSource,
+                followLocation = followLocation,
                 showMyLocation = true,
+                showTrackPoints = showTrackPoints,
+                recenterRequest = recenterRequest,
+                onUserGesture = { followLocation = false },
                 modifier = Modifier.fillMaxSize()
             )
             IconButton(
@@ -98,6 +119,37 @@ fun TrackScreen(
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
             ) {
                 Icon(Icons.Default.Fullscreen, contentDescription = "全屏")
+            }
+            IconButton(
+                onClick = { showTrackPoints = !showTrackPoints },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (showTrackPoints) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                        else MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    )
+            ) {
+                Icon(
+                    Icons.Default.FiberManualRecord,
+                    contentDescription = if (showTrackPoints) "隐藏记录点" else "显示记录点",
+                    tint = if (showTrackPoints) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurface
+                )
+            }
+            IconButton(
+                onClick = {
+                    followLocation = true
+                    recenterRequest++
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+            ) {
+                Icon(Icons.Default.MyLocation, contentDescription = "定位")
             }
         }
 
@@ -137,7 +189,11 @@ fun TrackScreen(
 
             // 停止记录（置顶显眼）
             Button(
-                onClick = { viewModel.stop() },
+                onClick = {
+                    saveName = uiState.trackName
+                    saveType = ActivityType.WALK
+                    showSaveDialog = true
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -193,8 +249,40 @@ fun TrackScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                StatCard(
+                    "海拔",
+                    uiState.altitude?.let { String.format("%.1f 米", it) } ?: "--",
+                    Modifier.weight(1f)
+                )
+                StatCard(
+                    "气压",
+                    uiState.pressureHpa?.let { String.format("%.1f hPa", it) } ?: "--",
+                    Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 StatCard("高度差", "${uiState.altitudeDiff.toInt()} 米", Modifier.weight(1f))
                 StatCard("总体方向", uiState.overallDirection ?: "--", Modifier.weight(1f))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatCard(
+                    "最高海拔",
+                    uiState.maxAltitude?.let { String.format("%.1f 米", it) } ?: "--",
+                    Modifier.weight(1f)
+                )
+                StatCard(
+                    "最低海拔",
+                    uiState.minAltitude?.let { String.format("%.1f 米", it) } ?: "--",
+                    Modifier.weight(1f)
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -321,9 +409,80 @@ fun TrackScreen(
             currentLat = uiState.latitude,
             currentLon = uiState.longitude,
             trackPoints = trackPoints,
+            mapSourceName = mapSource,
+            onMapSourceChange = { settingsViewModel.updateMapSource(it) },
+            showTrackPoints = showTrackPoints,
+            onShowTrackPointsChange = { showTrackPoints = it },
             onClose = { showFullscreen = false }
         )
     }
+
+    if (showSaveDialog) {
+        SaveTrackDialog(
+            name = saveName,
+            onNameChange = { saveName = it },
+            selectedType = saveType,
+            onTypeChange = { saveType = it },
+            onConfirm = {
+                viewModel.stop(saveName.trim().ifBlank { uiState.trackName }, saveType.ordinal)
+                showSaveDialog = false
+            },
+            onDismiss = { showSaveDialog = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SaveTrackDialog(
+    name: String,
+    onNameChange: (String) -> Unit,
+    selectedType: ActivityType,
+    onTypeChange: (ActivityType) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("保存记录") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    label = { Text("名称") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "记录类型",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    ActivityType.entries.forEach { type ->
+                        FilterChip(
+                            selected = selectedType == type,
+                            onClick = { onTypeChange(type) },
+                            label = { Text(type.label) },
+                            leadingIcon = {
+                                Icon(type.icon, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text("保存") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
 }
 
 @Composable

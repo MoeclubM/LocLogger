@@ -43,7 +43,6 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// GPS Logger 底部导航项
 enum class BottomBarDestination(
     @get:StringRes val label: Int,
     val icon: ImageVector,
@@ -54,7 +53,6 @@ enum class BottomBarDestination(
     Settings(R.string.tab_settings, Icons.Rounded.Settings)
 }
 
-// 普通导航栏毛玻璃 - 参考 SukiSU BlurredBar（LayerBackdrop + textureBlur）
 @Composable
 private fun BlurredBar(
     backdrop: LayerBackdrop?,
@@ -92,64 +90,65 @@ fun BottomBarMiuix(
     val items = BottomBarDestination.entries
 
     if (!enableFloatingBottomBar) {
-        BlurredBar(blurBackdrop) {
-            NavigationBar(
-                modifier = modifier,
-                color = if (blurBackdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
-            ) {
-                items.forEachIndexed { index, destination ->
-                    NavigationBarItem(
-                        modifier = Modifier.weight(1f),
-                        selected = mainState.selectedPage == index,
-                        onClick = { mainState.animateToPage(index) },
-                        icon = destination.icon,
-                        label = stringResource(destination.label)
-                    )
+        // align 必须落在外层，BlurredBar 作为 overlay 子节点默认 TopStart
+        Box(modifier = modifier.fillMaxWidth()) {
+            BlurredBar(blurBackdrop) {
+                NavigationBar(
+                    color = if (blurBackdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+                ) {
+                    items.forEachIndexed { index, destination ->
+                        NavigationBarItem(
+                            modifier = Modifier.weight(1f),
+                            selected = mainState.selectedPage == index,
+                            onClick = { mainState.animateToPage(index) },
+                            icon = destination.icon,
+                            label = stringResource(destination.label)
+                        )
+                    }
                 }
             }
         }
     } else {
-        // Scaffold 的 bottomBar 槽位默认 start 对齐，需全宽居中
         Box(
             modifier = modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-        FloatingBottomBar(
-            modifier = Modifier
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = {},
-                )
-                .padding(
-                    bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                ),
-            selectedIndex = { mainState.selectedPage },
-            onSelected = { mainState.animateToPage(it) },
-            backdrop = backdrop,
-            tabsCount = items.size,
-            isBlurEnabled = enableFloatingBottomBarBlur,
-        ) {
-            items.forEachIndexed { index, destination ->
-                FloatingBottomBarItem(
-                    onClick = { mainState.animateToPage(index) },
-                    modifier = Modifier.defaultMinSize(minWidth = 76.dp)
-                ) {
-                    Icon(
-                        imageVector = destination.icon,
-                        contentDescription = stringResource(destination.label),
+            FloatingBottomBar(
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
                     )
-                    Text(
-                        text = stringResource(destination.label),
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Visible
-                    )
+                    .padding(
+                        bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    ),
+                selectedIndex = { mainState.selectedPage },
+                onSelected = { mainState.animateToPage(it) },
+                backdrop = backdrop,
+                tabsCount = items.size,
+                isBlurEnabled = enableFloatingBottomBarBlur,
+            ) {
+                items.forEachIndexed { index, destination ->
+                    FloatingBottomBarItem(
+                        onClick = { mainState.animateToPage(index) },
+                        modifier = Modifier.defaultMinSize(minWidth = 76.dp)
+                    ) {
+                        Icon(
+                            imageVector = destination.icon,
+                            contentDescription = stringResource(destination.label),
+                        )
+                        Text(
+                            text = stringResource(destination.label),
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Visible
+                        )
+                    }
                 }
             }
-        }
         }
     }
 }

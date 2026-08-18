@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.DisplaySettings
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
@@ -62,6 +63,7 @@ import moe.telecom.loclogger.ui.util.PermissionStatusCard
 import moe.telecom.loclogger.ui.LocalBottomBarInset
 import moe.telecom.loclogger.BuildConfig
 import moe.telecom.loclogger.ui.component.liquid.GlassCard
+import moe.telecom.loclogger.ui.component.map.MapSources
 import moe.telecom.loclogger.viewmodel.SettingsViewModel
 
 @Composable
@@ -95,10 +97,64 @@ fun SettingsScreen(
             fontWeight = FontWeight.Bold
         )
 
-        // 显示设置
         SettingsSection(
             title = "显示",
             icon = Icons.Default.DisplaySettings
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenThemeManager() }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Palette,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp)
+                ) {
+                    Text(
+                        text = "主题管理器",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = "主题样式、颜色模式、底栏等",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        SettingsSection(
+            title = "地图",
+            icon = Icons.Default.Map
+        ) {
+            val mapNames = MapSources.names
+            val selectedMap = MapSources.fromName(settings.mapSource).name
+            SettingsDropdownItem(
+                title = "默认地图",
+                subtitle = "定位、录制和轨迹详情共用",
+                options = mapNames,
+                selectedIndex = mapNames.indexOf(selectedMap).coerceAtLeast(0),
+                onSelected = { viewModel.updateMapSource(mapNames[it]) }
+            )
+        }
+
+        SettingsSection(
+            title = "记录",
+            icon = Icons.Default.FiberManualRecord
         ) {
             SettingsSwitchItem(
                 title = "保持屏幕常亮",
@@ -106,52 +162,6 @@ fun SettingsScreen(
                 checked = settings.keepScreenOn,
                 onCheckedChange = { viewModel.updateKeepScreenOn(it) }
             )
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenThemeManager() }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Palette,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 12.dp)
-                    ) {
-                        Text(
-                            text = "主题管理器",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = "主题样式、颜色模式、底栏等",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        // 记录设置
-        SettingsSection(
-            title = "记录",
-            icon = Icons.Default.FiberManualRecord
-        ) {
             SettingsDropdownItem(
                 title = "GPS 更新周期",
                 subtitle = when (settings.gpsInterval) {

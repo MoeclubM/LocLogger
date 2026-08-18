@@ -7,9 +7,13 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -28,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import moe.telecom.loclogger.ui.LocalGlassBackdrop
@@ -56,6 +61,7 @@ import moe.telecom.loclogger.ui.util.PermissionRequester
 import moe.telecom.loclogger.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
@@ -121,16 +127,15 @@ private fun MainContent() {
     val enableBlur = LocalEnableBlur.current
     val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
     val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
+    // Liquid Glass / 悬浮底栏仅 Miuix；Material 走标准 NavigationBar
+    val useFloatingBar = isMiuix && enableFloatingBottomBar
 
     val surfaceColor = if (isMiuix) MiuixTheme.colorScheme.surface else MaterialTheme.colorScheme.background
-    val blurBackdrop = if (enableBlur && isRenderEffectSupported()) {
-        rememberLayerBackdrop {
-            drawRect(surfaceColor)
-            drawContent()
-        }
-    } else {
-        null
+    val blurLayer = rememberLayerBackdrop {
+        drawRect(surfaceColor)
+        drawContent()
     }
+    val blurBackdrop = if (isMiuix && enableBlur && isRenderEffectSupported()) blurLayer else null
     val backdrop = rememberLayerBackdrop {
         drawRect(surfaceColor)
         drawContent()
@@ -140,100 +145,123 @@ private fun MainContent() {
         mainPagerState.syncPage()
     }
 
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp.toFloat()
+    val screenHeightDp = configuration.screenHeightDp.toFloat()
+    val showSplitPane = screenWidthDp >= 840f || (screenWidthDp >= 600f && screenHeightDp / screenWidthDp < 1.2f)
+    val useNavigationRail = showSplitPane && !useFloatingBar
+    val showSystemNav = selectedTrack == null && !showThemeManager
+
+    val contentArea: @Composable () -> Unit = {
+        HorizontalPager(
+            state = pagerState,
+            userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null && !showThemeManager,
+            beyondViewportPageCount = 3,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            when (page) {
+                0 -> DashboardScreen()
+                1 -> TrackScreen()
+                2 -> TracksScreen(onTrackClick = { selectedTrack = it })
+                3 -> SettingsScreen(onOpenThemeManager = { showThemeManager = true })
+            }
+        }
+
+        selectedTrack?.let { track ->
+            TrackDetailScreen(
+                trackItem = track,
+                onBack = { selectedTrack = null }
+            )
+        }
+
+        if (showThemeManager) {
+            ThemeManagerScreen(onBack = { showThemeManager = false })
+        }
+    }
+
+    val pagerBackdrop = Modifier
+        .then(if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop) else Modifier)
+        .then(
+            if (useFloatingBar && enableFloatingBottomBarBlur) Modifier.layerBackdrop(backdrop)
+            else Modifier
+        )
+
+    val layoutDirection = LocalLayoutDirection.current
+
+    fun Modifier.scaffoldContentPadding(innerPadding: PaddingValues): Modifier = padding(
+        start = innerPadding.calculateStartPadding(layoutDirection),
+        top = innerPadding.calculateTopPadding(),
+        end = innerPadding.calculateEndPadding(layoutDirection),
+        // Liquid Glass 悬浮栏要叠在内容上才能折射；普通底栏由 Scaffold 占位
+        bottom = if (useFloatingBar) 0.dp else innerPadding.calculateBottomPadding()
+    )
+
+    val bottomBar: @Composable () -> Unit = {
+        if (showSystemNav) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                BottomBar(
+                    blurBackdrop = blurBackdrop,
+                    backdrop = backdrop,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
+        }
+    }
+
     CompositionLocalProvider(
         LocalMainPagerState provides mainPagerState,
-        LocalGlassBackdrop provides (if (isMiuix) backdrop else null),
-        LocalBottomBarInset provides if (enableFloatingBottomBar) 68.dp else 64.dp
+        LocalGlassBackdrop provides (if (useFloatingBar) backdrop else null),
     ) {
-        Scaffold(
-            bottomBar = {}
-        ) { innerPadding ->
-
-            // 宽屏/横屏时使用侧边导航栏（对齐 SukiSU showSplitPane 判定），Miuix 浮动底栏模式仍保留底部 Liquid Glass
-            val configuration = LocalConfiguration.current
-            val screenWidthDp = configuration.screenWidthDp.toFloat()
-            val screenHeightDp = configuration.screenHeightDp.toFloat()
-            val showSplitPane = screenWidthDp >= 840f || (screenWidthDp >= 600f && screenHeightDp / screenWidthDp < 1.2f)
-            val useNavigationRail = showSplitPane && !(isMiuix && enableFloatingBottomBar)
-            // 子页面（查看记录/主题管理器）打开时隐藏导航栏，防止误切页面
-            val showSystemNav = selectedTrack == null && !showThemeManager
-
-            val contentArea: @Composable () -> Unit = {
-                HorizontalPager(
-                    state = pagerState,
-                    userScrollEnabled = pagerState.currentPage != 0 && selectedTrack == null && !showThemeManager,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    when (page) {
-                        0 -> DashboardScreen()
-                        1 -> TrackScreen()
-                        2 -> TracksScreen(onTrackClick = { selectedTrack = it })
-                        3 -> SettingsScreen(onOpenThemeManager = { showThemeManager = true })
-                    }
-                }
-
-                selectedTrack?.let { track ->
-                    TrackDetailScreen(
-                        trackItem = track,
-                        onBack = { selectedTrack = null }
-                    )
-                }
-
-                if (showThemeManager) {
-                    ThemeManagerScreen(onBack = { showThemeManager = false })
-                }
-            }
-
-            if (useNavigationRail) {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    if (showSystemNav) {
-                        SideRail(
-                            modifier = Modifier.align(Alignment.CenterVertically)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
-                            .then(if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop) else Modifier)
-                    ) {
+        if (useNavigationRail) {
+            val railBody: @Composable (PaddingValues) -> Unit = { innerPadding ->
+                CompositionLocalProvider(LocalBottomBarInset provides 0.dp) {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        if (showSystemNav) {
+                            SideRail(
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                        }
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .then(pagerBackdrop)
+                                .scaffoldContentPadding(innerPadding)
                         ) {
                             contentArea()
                         }
                     }
                 }
+            }
+            if (isMiuix) {
+                MiuixScaffold(content = railBody)
             } else {
-                // 毛玻璃 backdrop 只捕获页面内容（整屏含底栏后方），底栏作为捕获层之外的兄弟节点采样，
-                Box(modifier = Modifier.fillMaxSize()) {
-                    // 页面内容捕获层（整屏，底栏在层外）
+                Scaffold(content = railBody)
+            }
+        } else {
+            val body: @Composable (PaddingValues) -> Unit = { innerPadding ->
+                CompositionLocalProvider(
+                    LocalBottomBarInset provides if (useFloatingBar) {
+                        innerPadding.calculateBottomPadding()
+                    } else {
+                        0.dp
+                    }
+                ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .then(if (isMiuix) Modifier.layerBackdrop(backdrop) else Modifier)
-                            .then(if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop) else Modifier)
+                            .then(pagerBackdrop)
+                            .scaffoldContentPadding(innerPadding)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
-                        ) {
-                            contentArea()
-                        }
-                    }
-                    // 底部栏覆盖在内容之上（不占内边距），内容延伸到其后方供毛玻璃采样；子页面打开时隐藏防误切
-                    if (showSystemNav) {
-                        BottomBar(
-                            blurBackdrop = blurBackdrop,
-                            backdrop = backdrop,
-                            modifier = Modifier.align(Alignment.BottomCenter)
-                        )
+                        contentArea()
                     }
                 }
+            }
+            // 对标 SukiSU：Material 用标准底栏；Miuix 用 Miuix Scaffold，普通栏贴底、Liquid Glass 在槽位内悬浮
+            if (isMiuix) {
+                MiuixScaffold(bottomBar = bottomBar, content = body)
+            } else {
+                Scaffold(bottomBar = bottomBar, content = body)
             }
         }
     }

@@ -18,10 +18,10 @@ data class MapSourceDef(
     val attribution: String = "",
     val coordinateSystem: CoordinateSystem = CoordinateSystem.WGS84
 ) {
-    /** 生成 MapLibre raster style JSON */
+    /** 生成 MapLibre raster style JSON；带初始视野，避免 setStyle 时闪到 (0,0) */
     fun styleJson(): String {
         val tiles = tileUrls.joinToString(",") { "\"$it\"" }
-        return """{"version":8,"sources":{"tiles":{"type":"raster","tiles":[$tiles],"tileSize":$tileSize,"maxzoom":$maxZoom,"attribution":"$attribution"}},"layers":[{"id":"tiles","type":"raster","source":"tiles"}]}"""
+        return """{"version":8,"center":[105,35],"zoom":4,"sources":{"tiles":{"type":"raster","tiles":[$tiles],"tileSize":$tileSize,"maxzoom":$maxZoom,"attribution":"$attribution"}},"layers":[{"id":"tiles","type":"raster","source":"tiles","paint":{"raster-resampling":"linear"}}]}"""
     }
 }
 
@@ -46,12 +46,13 @@ object MapSources {
     val GOOGLE_MAP = MapSourceDef(
         name = "Google地图",
         tileUrls = listOf(
-            "https://mt0.google.com/vt/lyrs=m&hl=zh-CN&x={x}&y={y}&z={z}",
-            "https://mt1.google.com/vt/lyrs=m&hl=zh-CN&x={x}&y={y}&z={z}",
-            "https://mt2.google.com/vt/lyrs=m&hl=zh-CN&x={x}&y={y}&z={z}",
-            "https://mt3.google.com/vt/lyrs=m&hl=zh-CN&x={x}&y={y}&z={z}"
+            "https://mt0.google.com/vt/lyrs=m&hl=zh-CN&scale=2&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=m&hl=zh-CN&scale=2&x={x}&y={y}&z={z}",
+            "https://mt2.google.com/vt/lyrs=m&hl=zh-CN&scale=2&x={x}&y={y}&z={z}",
+            "https://mt3.google.com/vt/lyrs=m&hl=zh-CN&scale=2&x={x}&y={y}&z={z}"
         ),
         maxZoom = 20,
+        tileSize = 512,
         attribution = "© Google",
         coordinateSystem = CoordinateSystem.GCJ02
     )
@@ -60,12 +61,13 @@ object MapSources {
     val GOOGLE_SATELLITE = MapSourceDef(
         name = "Google卫星",
         tileUrls = listOf(
-            "https://mt0.google.com/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}",
-            "https://mt1.google.com/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}",
-            "https://mt2.google.com/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}",
-            "https://mt3.google.com/vt/lyrs=s&hl=zh-CN&x={x}&y={y}&z={z}"
+            "https://mt0.google.com/vt/lyrs=s&hl=zh-CN&scale=2&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=s&hl=zh-CN&scale=2&x={x}&y={y}&z={z}",
+            "https://mt2.google.com/vt/lyrs=s&hl=zh-CN&scale=2&x={x}&y={y}&z={z}",
+            "https://mt3.google.com/vt/lyrs=s&hl=zh-CN&scale=2&x={x}&y={y}&z={z}"
         ),
         maxZoom = 20,
+        tileSize = 512,
         attribution = "© Google",
         coordinateSystem = CoordinateSystem.WGS84
     )
@@ -74,24 +76,26 @@ object MapSources {
     val GOOGLE_TERRAIN = MapSourceDef(
         name = "Google地形",
         tileUrls = listOf(
-            "https://mt0.google.com/vt/lyrs=p&hl=zh-CN&x={x}&y={y}&z={z}",
-            "https://mt1.google.com/vt/lyrs=p&hl=zh-CN&x={x}&y={y}&z={z}"
+            "https://mt0.google.com/vt/lyrs=p&hl=zh-CN&scale=2&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=p&hl=zh-CN&scale=2&x={x}&y={y}&z={z}"
         ),
         maxZoom = 18,
+        tileSize = 512,
         attribution = "© Google",
         coordinateSystem = CoordinateSystem.GCJ02
     )
 
-    // 高德地图
+    // 高德地图（scale=2 为 512 视网膜瓦片，放大后更清晰）
     val AMAP = MapSourceDef(
         name = "高德地图",
         tileUrls = listOf(
-            "https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}",
-            "https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}",
-            "https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}",
-            "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
+            "https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}",
+            "https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}",
+            "https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}",
+            "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}"
         ),
         maxZoom = 18,
+        tileSize = 512,
         attribution = "© 高德地图",
         coordinateSystem = CoordinateSystem.GCJ02
     )
@@ -100,12 +104,13 @@ object MapSources {
     val AMAP_SATELLITE = MapSourceDef(
         name = "高德卫星",
         tileUrls = listOf(
-            "https://wprd01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-            "https://wprd02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-            "https://wprd03.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
-            "https://wprd04.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}"
+            "https://wprd01.is.autonavi.com/appmaptile?style=6&size=1&scl=2&x={x}&y={y}&z={z}",
+            "https://wprd02.is.autonavi.com/appmaptile?style=6&size=1&scl=2&x={x}&y={y}&z={z}",
+            "https://wprd03.is.autonavi.com/appmaptile?style=6&size=1&scl=2&x={x}&y={y}&z={z}",
+            "https://wprd04.is.autonavi.com/appmaptile?style=6&size=1&scl=2&x={x}&y={y}&z={z}"
         ),
         maxZoom = 18,
+        tileSize = 512,
         attribution = "© 高德地图",
         coordinateSystem = CoordinateSystem.GCJ02
     )
@@ -115,5 +120,7 @@ object MapSources {
         AMAP, AMAP_SATELLITE
     )
 
-    fun fromName(name: String) = all.firstOrNull { it.name == name } ?: OSM
+    fun fromName(name: String) = all.firstOrNull { it.name == name } ?: AMAP
+
+    val names: List<String> get() = all.map { it.name }
 }

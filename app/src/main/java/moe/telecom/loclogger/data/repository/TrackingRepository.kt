@@ -85,8 +85,8 @@ class TrackingRepository @Inject constructor(
         TrackingService.resume(context)
     }
 
-    fun stopTracking() {
-        TrackingService.stop(context)
+    fun stopTracking(name: String? = null, activityType: Int? = null) {
+        TrackingService.stop(context, name, activityType)
     }
 
     fun addAnnotation(description: String) {
@@ -118,6 +118,7 @@ class TrackingRepository @Inject constructor(
             "kml" -> TrackExporter.exportKml(out, track, points, annotations)
             "kmz" -> TrackExporter.exportKmz(out, track, points, annotations)
             "csv" -> TrackExporter.exportCsv(out, track, points)
+            "json" -> TrackExporter.exportJson(out, track, points, annotations)
             else -> TrackExporter.exportTxt(out, track, points, annotations)
         }
     }

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import moe.telecom.loclogger.viewmodel.AppSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,6 +35,7 @@ class SettingsRepository @Inject constructor(
         val IMPROVE_ACCURACY = booleanPreferencesKey("improve_accuracy")
         val EGM96 = booleanPreferencesKey("egm96_correction")
         val GPX_VERSION = intPreferencesKey("gpx_version")
+        val MAP_SOURCE = stringPreferencesKey("map_source")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -54,7 +56,8 @@ class SettingsRepository @Inject constructor(
                 0 -> "1.0"
                 2 -> "2.2"
                 else -> "1.1"
-            }
+            },
+            mapSource = prefs[Keys.MAP_SOURCE] ?: "高德地图"
         )
     }
 
@@ -114,5 +117,9 @@ class SettingsRepository @Inject constructor(
                 else -> 1
             }
         }
+    }
+
+    suspend fun updateMapSource(name: String) {
+        context.dataStore.edit { it[Keys.MAP_SOURCE] = name }
     }
 }

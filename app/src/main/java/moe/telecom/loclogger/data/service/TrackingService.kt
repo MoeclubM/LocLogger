@@ -7,11 +7,16 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.GnssStatus
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.os.Handler
 import android.os.Looper
@@ -45,6 +50,17 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 
+data class SatelliteInfo(
+    val svid: Int,
+    val constellation: Int,
+    val cn0DbHz: Float,
+    val azimuth: Float,
+    val elevation: Float,
+    val usedInFix: Boolean,
+    val hasAlmanac: Boolean,
+    val hasEphemeris: Boolean
+)
+
 data class TrackingState(
     val isRecording: Boolean = false,
     val isPaused: Boolean = false,
@@ -58,6 +74,7 @@ data class TrackingState(
     val bearing: Float? = null,
     val satellitesUsed: Int = 0,
     val satellitesVisible: Int = 0,
+    val satellites: List<SatelliteInfo> = emptyList(),
     val pointCount: Int = 0,
     val annotationCount: Int = 0,
     val distance: Double = 0.0,
@@ -68,7 +85,8 @@ data class TrackingState(
     val minAltitude: Double? = null,
     val altitudeDiff: Double = 0.0,
     val startTime: Long = 0L,
-    val lastUpdateTime: Long = 0L
+    val lastUpdateTime: Long = 0L,
+    val pressureHpa: Float? = null
 )
 
 @AndroidEntryPoint
@@ -104,6 +122,8 @@ class TrackingService : Service() {
     private var minAlt: Double? = null
     private var durationUpdateJob: Job? = null
     private var locationUpdatesStarted = false
+    private var lastPressureHpa: Float? = null
+    private var sensorManager: SensorManager? = null
 
     private val trackNameFormat = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault())
 
@@ -115,14 +135,40 @@ class TrackingService : Service() {
         override fun onSatelliteStatusChanged(status: GnssStatus) {
             var used = 0
             val visible = status.satelliteCount
+            val satellites = ArrayList<SatelliteInfo>(visible)
             for (i in 0 until visible) {
-                if (status.usedInFix(i)) used++
+                val inFix = status.usedInFix(i)
+                if (inFix) used++
+                satellites += SatelliteInfo(
+                    svid = status.getSvid(i),
+                    constellation = status.getConstellationType(i),
+                    cn0DbHz = status.getCn0DbHz(i),
+                    azimuth = status.getAzimuthDegrees(i),
+                    elevation = status.getElevationDegrees(i),
+                    usedInFix = inFix,
+                    hasAlmanac = status.hasAlmanacData(i),
+                    hasEphemeris = status.hasEphemerisData(i)
+                )
             }
             _trackingState.value = _trackingState.value.copy(
                 satellitesUsed = used,
-                satellitesVisible = visible
+                satellitesVisible = visible,
+                satellites = satellites
             )
         }
+    }
+
+    private val pressureListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            if (event.sensor.type != Sensor.TYPE_PRESSURE) return
+            lastPressureHpa = event.values[0]
+            val state = _trackingState.value
+            if (state.pressureHpa != lastPressureHpa) {
+                _trackingState.value = state.copy(pressureHpa = lastPressureHpa)
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
     }
 
     inner class LocalBinder : Binder() {
@@ -136,6 +182,10 @@ class TrackingService : Service() {
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        sensorManager?.getDefaultSensor(Sensor.TYPE_PRESSURE)?.let { barometer ->
+            sensorManager?.registerListener(pressureListener, barometer, SensorManager.SENSOR_DELAY_NORMAL)
+        }
         // 实时定位：服务绑定即开始监听，未录制也能显示定位
         serviceScope.launch {
             val settings = settingsRepository.settings.first()
@@ -149,7 +199,10 @@ class TrackingService : Service() {
             ACTION_START -> startTracking()
             ACTION_PAUSE -> pauseTracking()
             ACTION_RESUME -> resumeTracking()
-            ACTION_STOP -> stopTracking()
+            ACTION_STOP -> stopTracking(
+                name = intent.getStringExtra(EXTRA_TRACK_NAME),
+                activityType = intent.getIntExtra(EXTRA_ACTIVITY_TYPE, -1).takeIf { it >= 0 }
+            )
             ACTION_ADD_ANNOTATION -> {
                 val desc = intent.getStringExtra(EXTRA_ANNOTATION_DESC) ?: "批注"
                 addAnnotation(desc)
@@ -203,7 +256,7 @@ class TrackingService : Service() {
         updateNotification(getString(R.string.notification_recording))
     }
 
-    fun stopTracking() {
+    fun stopTracking(name: String? = null, activityType: Int? = null) {
         if (!_trackingState.value.isRecording) return
 
         serviceScope.launch {
@@ -228,6 +281,13 @@ class TrackingService : Service() {
                 altDiff = altDiff,
                 annotationCount = _trackingState.value.annotationCount
             )
+            val trimmedName = name?.trim().orEmpty()
+            if (trimmedName.isNotEmpty()) {
+                trackDao.renameTrack(trackId, trimmedName)
+            }
+            if (activityType != null) {
+                trackDao.updateActivityType(trackId, activityType)
+            }
 
             releaseWakeLock()
             durationUpdateJob?.cancel()
@@ -245,7 +305,9 @@ class TrackingService : Service() {
                 accuracy = live.accuracy,
                 bearing = live.bearing,
                 satellitesUsed = live.satellitesUsed,
-                satellitesVisible = live.satellitesVisible
+                satellitesVisible = live.satellitesVisible,
+                satellites = live.satellites,
+                pressureHpa = live.pressureHpa
             )
             currentTrackId = null
             lastLocation = null
@@ -281,16 +343,19 @@ class TrackingService : Service() {
     private fun handleLocationUpdate(location: Location) {
         val now = System.currentTimeMillis()
         val state = _trackingState.value
+        val altitude = location.resolvedAltitude() ?: state.altitude
+        val pressure = lastPressureHpa ?: state.pressureHpa
 
         // 实时定位：无论是否录制都更新坐标，未录制也能显示定位
         _trackingState.value = state.copy(
             latitude = location.latitude,
             longitude = location.longitude,
-            altitude = if (location.hasAltitude()) location.altitude else null,
-            speed = if (location.hasSpeed()) location.speed else null,
-            accuracy = if (location.hasAccuracy()) location.accuracy else null,
-            bearing = if (location.hasBearing()) location.bearing else null,
-            lastUpdateTime = now
+            altitude = altitude,
+            speed = if (location.hasSpeed()) location.speed else state.speed,
+            accuracy = if (location.hasAccuracy()) location.accuracy else state.accuracy,
+            bearing = if (location.hasBearing()) location.bearing else state.bearing,
+            lastUpdateTime = now,
+            pressureHpa = pressure
         )
 
         // 仅录制阶段写库与统计
@@ -312,8 +377,7 @@ class TrackingService : Service() {
         }
 
         // 更新高度极值
-        if (location.hasAltitude()) {
-            val alt = location.altitude
+        altitude?.let { alt ->
             if (maxAlt == null || alt > maxAlt!!) maxAlt = alt
             if (minAlt == null || alt < minAlt!!) minAlt = alt
         }
@@ -332,16 +396,17 @@ class TrackingService : Service() {
                     trackId = trackId,
                     latitude = location.latitude,
                     longitude = location.longitude,
-                    altitude = if (location.hasAltitude()) location.altitude else null,
-                    altitudeEGM96 = if (egm96Enabled && location.hasAltitude()) {
-                        Egm96.geoidHeight(location.latitude, location.longitude)?.let { location.altitude - it }
+                    altitude = altitude,
+                    altitudeEGM96 = if (egm96Enabled && altitude != null) {
+                        Egm96.geoidHeight(location.latitude, location.longitude)?.let { altitude - it }
                     } else null,
                     speed = if (location.hasSpeed()) location.speed else null,
                     accuracy = if (location.hasAccuracy()) location.accuracy else null,
                     bearing = if (location.hasBearing()) location.bearing else null,
                     timestamp = now,
                     satellitesUsed = _trackingState.value.satellitesUsed,
-                    satellitesVisible = _trackingState.value.satellitesVisible
+                    satellitesVisible = _trackingState.value.satellitesVisible,
+                    pressureHpa = pressure
                 )
             )
 
@@ -354,10 +419,10 @@ class TrackingService : Service() {
             _trackingState.value = _trackingState.value.copy(
                 latitude = location.latitude,
                 longitude = location.longitude,
-                altitude = if (location.hasAltitude()) location.altitude else null,
-                speed = if (location.hasSpeed()) location.speed else null,
-                accuracy = if (location.hasAccuracy()) location.accuracy else null,
-                bearing = if (location.hasBearing()) location.bearing else null,
+                altitude = altitude,
+                speed = if (location.hasSpeed()) location.speed else _trackingState.value.speed,
+                accuracy = if (location.hasAccuracy()) location.accuracy else _trackingState.value.accuracy,
+                bearing = if (location.hasBearing()) location.bearing else _trackingState.value.bearing,
                 pointCount = pointCount,
                 distance = totalDistance,
                 maxSpeed = maxSpeed,
@@ -365,7 +430,8 @@ class TrackingService : Service() {
                 maxAltitude = maxAlt,
                 minAltitude = minAlt,
                 altitudeDiff = if (maxAlt != null && minAlt != null) maxAlt!! - minAlt!! else 0.0,
-                lastUpdateTime = now
+                lastUpdateTime = now,
+                pressureHpa = pressure
             )
 
             // 更新通知
@@ -481,6 +547,7 @@ class TrackingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        sensorManager?.unregisterListener(pressureListener)
         stopLocationUpdates()
         releaseWakeLock()
         durationUpdateJob?.cancel()
@@ -498,6 +565,8 @@ class TrackingService : Service() {
         const val ACTION_STOP = "moe.telecom.loclogger.STOP_TRACKING"
         const val ACTION_ADD_ANNOTATION = "moe.telecom.loclogger.ADD_ANNOTATION"
         const val EXTRA_ANNOTATION_DESC = "annotation_desc"
+        const val EXTRA_TRACK_NAME = "track_name"
+        const val EXTRA_ACTIVITY_TYPE = "activity_type"
 
         private const val MIN_TIME_MS = 1000L
         private const val MIN_DISTANCE_M = 0f
@@ -523,9 +592,11 @@ class TrackingService : Service() {
             context.startService(intent)
         }
 
-        fun stop(context: Context) {
+        fun stop(context: Context, name: String? = null, activityType: Int? = null) {
             val intent = Intent(context, TrackingService::class.java).apply {
                 action = ACTION_STOP
+                if (!name.isNullOrBlank()) putExtra(EXTRA_TRACK_NAME, name)
+                if (activityType != null) putExtra(EXTRA_ACTIVITY_TYPE, activityType)
             }
             context.startService(intent)
         }
@@ -538,4 +609,12 @@ class TrackingService : Service() {
             context.startService(intent)
         }
     }
+}
+
+private fun Location.resolvedAltitude(): Double? {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && hasMslAltitude()) {
+        return mslAltitudeMeters
+    }
+    if (hasAltitude()) return altitude
+    return null
 }

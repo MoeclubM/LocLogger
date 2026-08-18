@@ -78,7 +78,7 @@ data class TrackItem(
     val avgSpeed: String
 )
 
-private val EXPORT_FORMATS = listOf("GPX", "KML", "KMZ", "CSV", "TXT")
+private val EXPORT_FORMATS = listOf("GPX", "KML", "KMZ", "CSV", "JSON", "TXT")
 
 @Composable
 fun TracksScreen(

@@ -32,7 +32,9 @@ object AppModule {
         context,
         AppDatabase::class.java,
         AppDatabase.DATABASE_NAME
-    ).fallbackToDestructiveMigration(dropAllTables = true).build()
+    ).addMigrations(AppDatabase.MIGRATION_1_2)
+        .fallbackToDestructiveMigration(dropAllTables = true)
+        .build()
 
     @Provides
     fun provideTrackDao(db: AppDatabase): TrackDao = db.trackDao()

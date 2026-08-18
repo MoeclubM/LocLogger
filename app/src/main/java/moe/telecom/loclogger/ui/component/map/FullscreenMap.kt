@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.DropdownMenu
@@ -46,11 +47,15 @@ fun FullscreenMap(
     currentLon: Double? = null,
     trackPoints: List<Pair<Double, Double>> = emptyList(),
     annotations: List<Triple<Double, Double, String>> = emptyList(),
+    mapSourceName: String = MapSources.AMAP.name,
+    onMapSourceChange: (String) -> Unit = {},
     showMyLocation: Boolean = true,
     initialFollow: Boolean = true,
+    showTrackPoints: Boolean = false,
+    onShowTrackPointsChange: (Boolean) -> Unit = {},
     onClose: () -> Unit
 ) {
-    var mapSource by remember { mutableStateOf(MapSources.AMAP.name) }
+    var mapSource by remember(mapSourceName) { mutableStateOf(mapSourceName) }
     var followLocation by remember { mutableStateOf(initialFollow) }
     var recenterRequest by remember { mutableIntStateOf(0) }
     var showMapSourceMenu by remember { mutableStateOf(false) }
@@ -71,6 +76,7 @@ fun FullscreenMap(
                 mapSourceName = mapSource,
                 followLocation = followLocation,
                 showMyLocation = showMyLocation,
+                showTrackPoints = showTrackPoints,
                 recenterRequest = recenterRequest,
                 onUserGesture = { followLocation = false },
                 modifier = Modifier.fillMaxSize()
@@ -101,6 +107,25 @@ fun FullscreenMap(
                         .weight(1f)
                         .padding(horizontal = 12.dp)
                 )
+                if (trackPoints.isNotEmpty()) {
+                    IconButton(
+                        onClick = { onShowTrackPointsChange(!showTrackPoints) },
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (showTrackPoints) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                else MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                            )
+                    ) {
+                        Icon(
+                            Icons.Default.FiberManualRecord,
+                            contentDescription = if (showTrackPoints) "隐藏记录点" else "显示记录点",
+                            tint = if (showTrackPoints) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
                 Box {
                     IconButton(
                         onClick = { showMapSourceMenu = true },
@@ -119,6 +144,7 @@ fun FullscreenMap(
                                 text = { Text(source.name) },
                                 onClick = {
                                     mapSource = source.name
+                                    onMapSourceChange(source.name)
                                     showMapSourceMenu = false
                                 }
                             )

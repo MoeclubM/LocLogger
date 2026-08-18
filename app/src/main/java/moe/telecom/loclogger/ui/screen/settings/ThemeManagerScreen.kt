@@ -82,12 +82,6 @@ fun ThemeManagerScreen(
                     onSelected = { viewModel.updateThemeColor(it) }
                 )
                 SettingsSwitchItem(
-                    title = "模糊效果",
-                    subtitle = "界面毛玻璃/透镜模糊",
-                    checked = settings.enableBlur,
-                    onCheckedChange = { viewModel.updateEnableBlur(it) }
-                )
-                SettingsSwitchItem(
                     title = "动态取色 (Material You)",
                     subtitle = "跟随系统壁纸自动取色",
                     checked = settings.dynamicColor,
@@ -101,19 +95,27 @@ fun ThemeManagerScreen(
                         onCheckedChange = { viewModel.updatePureBlack(it) }
                     )
                 }
-                SettingsSwitchItem(
-                    title = "Liquid Glass 底栏",
-                    subtitle = "浮动式毛玻璃导航栏",
-                    checked = settings.enableFloatingBottomBar,
-                    onCheckedChange = { viewModel.updateFloatingBottomBar(it) }
-                )
-                if (settings.enableFloatingBottomBar) {
+                if (UiMode.fromInt(settings.uiMode) == UiMode.Miuix) {
                     SettingsSwitchItem(
-                        title = "底栏模糊效果",
-                        subtitle = "开启毛玻璃/透镜折射",
-                        checked = settings.enableFloatingBottomBarBlur,
-                        onCheckedChange = { viewModel.updateFloatingBottomBarBlur(it) }
+                        title = "模糊效果",
+                        subtitle = "界面毛玻璃/透镜模糊",
+                        checked = settings.enableBlur,
+                        onCheckedChange = { viewModel.updateEnableBlur(it) }
                     )
+                    SettingsSwitchItem(
+                        title = "悬浮底栏",
+                        subtitle = "浮动式毛玻璃导航栏",
+                        checked = settings.enableFloatingBottomBar,
+                        onCheckedChange = { viewModel.updateFloatingBottomBar(it) }
+                    )
+                    if (settings.enableFloatingBottomBar) {
+                        SettingsSwitchItem(
+                            title = "底栏模糊效果",
+                            subtitle = "开启毛玻璃/透镜折射",
+                            checked = settings.enableFloatingBottomBarBlur,
+                            onCheckedChange = { viewModel.updateFloatingBottomBarBlur(it) }
+                        )
+                    }
                 }
             }
 

@@ -55,6 +55,7 @@ fun GpsMapView(
     mapSourceName: String = "高德地图",
     followLocation: Boolean = true,
     showMyLocation: Boolean = true,
+    showTrackPoints: Boolean = false,
     recenterRequest: Int = 0,
     onUserGesture: () -> Unit = {}
 ) {
@@ -75,6 +76,7 @@ fun GpsMapView(
             map.moveCamera(
                 CameraUpdateFactory.newLatLngZoom(LatLng(35.0, 105.0), 4.0)
             )
+            map.setMinZoomPreference(3.0)
             // 用户开始拖动地图时通知外部关闭跟随，避免相机被定位更新拉回
             map.addOnMoveListener(object : MapLibreMap.OnMoveListener {
                 override fun onMoveBegin(detector: MoveGestureDetector) = currentOnUserGesture()
@@ -122,6 +124,11 @@ fun GpsMapView(
             if (state.map != null && state.style != null) zoomToTrack(state)
             else state.pendingTrackZoom = true
         }
+    }
+
+    LaunchedEffect(showTrackPoints) {
+        state.showTrackPoints = showTrackPoints
+        setTrackPointsVisible(state, showTrackPoints)
     }
 
     // 批注标记
@@ -180,6 +187,8 @@ private class MapViewState {
     var trackPoints: List<Pair<Double, Double>> = emptyList()
     var annotations: List<Triple<Double, Double, String>> = emptyList()
     var pendingTrackZoom = false
+    var hasLocated = false
+    var showTrackPoints = false
 }
 
 /** 按地图源名加载 raster 样式；同源不重复加载 */
@@ -189,12 +198,19 @@ private fun applySource(state: MapViewState, sourceName: String) {
     val def = MapSources.fromName(sourceName)
     if (state.loadedSource == def.name) return
     state.loadedSource = def.name
+    val cameraBefore = map.cameraPosition
+    val keepCamera = state.hasLocated && cameraBefore.zoom >= 2.0
+    map.setMaxZoomPreference(def.maxZoom + 1.0)
     map.setStyle(Style.Builder().fromJson(def.styleJson())) { style ->
         state.style = style
         addOverlayLayers(style)
         updateTrack(state)
         updateAnnotations(state)
         updateLocation(state, show = true)
+        setTrackPointsVisible(state, state.showTrackPoints)
+        if (keepCamera) {
+            map.moveCamera(CameraUpdateFactory.newCameraPosition(cameraBefore))
+        }
         if (state.pendingTrackZoom && state.trackPoints.size > 1) {
             state.pendingTrackZoom = false
             zoomToTrack(state)
@@ -220,6 +236,17 @@ private fun addOverlayLayers(style: Style) {
         ),
         "tiles"
     )
+
+    style.addSource(GeoJsonSource("track-points-source", FeatureCollection.fromFeatures(emptyList())))
+    val trackPointsLayer = CircleLayer("track-points-layer", "track-points-source").withProperties(
+        PropertyFactory.circleColor("#00BCD4"),
+        PropertyFactory.circleRadius(3.5f),
+        PropertyFactory.circleStrokeColor("#FFFFFF"),
+        PropertyFactory.circleStrokeWidth(1.2f),
+        PropertyFactory.visibility(Property.NONE)
+    )
+    trackPointsLayer.minZoom = 13f
+    style.addLayerAbove(trackPointsLayer, "track-layer")
 
     style.addLayerAbove(
         SymbolLayer("annotation-layer", "annotation-source").withProperties(
@@ -272,6 +299,20 @@ private fun updateTrack(state: MapViewState) {
         emptyList()
     }
     source.setGeoJson(FeatureCollection.fromFeatures(features))
+
+    val pointSource = style.getSourceAs<GeoJsonSource>("track-points-source") ?: return
+    val pointFeatures = pts.map { (lat, lon) ->
+        val (mlat, mlon) = toMapCoord(lat, lon, mapSource)
+        Feature.fromGeometry(Point.fromLngLat(mlon, mlat))
+    }
+    pointSource.setGeoJson(FeatureCollection.fromFeatures(pointFeatures))
+}
+
+private fun setTrackPointsVisible(state: MapViewState, show: Boolean) {
+    val layer = state.style?.getLayer("track-points-layer") ?: return
+    layer.setProperties(
+        PropertyFactory.visibility(if (show) Property.VISIBLE else Property.NONE)
+    )
 }
 
 private fun updateAnnotations(state: MapViewState) {
@@ -300,20 +341,24 @@ private fun updateLocation(state: MapViewState, show: Boolean) {
     source.setGeoJson(FeatureCollection.fromFeatures(features))
 }
 
-/** 跟随定位：仅在首次定位或离视野中心较远时移动相机，避免频繁动画 */
+/** 跟随定位：只平移不改缩放；首次定位才拉到合适层级 */
 private fun moveCamera(state: MapViewState, lat: Double, lon: Double, force: Boolean) {
     val map = state.map ?: return
     val mapSource = state.mapSource ?: return
     val (mlat, mlon) = toMapCoord(lat, lon, mapSource)
     val target = LatLng(mlat, mlon)
     val camera = map.cameraPosition
+    val currentZoom = camera.zoom
     val distToCenter = camera.target?.distanceTo(target) ?: Double.MAX_VALUE
-    val needsMove = force || camera.zoom < 14.0 || distToCenter > 150.0
-    if (needsMove) {
-        map.animateCamera(
-            CameraUpdateFactory.newLatLngZoom(target, camera.zoom.coerceAtLeast(16.0)),
-            600
-        )
+
+    if (!state.hasLocated || force) {
+        val zoom = if (currentZoom >= 10.0) currentZoom else 16.0
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(target, zoom), 600)
+        state.hasLocated = true
+        return
+    }
+    if (distToCenter > 8.0) {
+        map.easeCamera(CameraUpdateFactory.newLatLng(target), 250)
     }
 }
 
